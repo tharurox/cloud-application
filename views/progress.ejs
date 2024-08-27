@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcription Progress</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <h1>Transcription in Progress...</h1>
+    <progress value="0" max="100" id="progressBar"></progress>
+    <p>Transcribing your video...</p>
+
+    <script>
+        // Simulate progress bar (replace this with real-time updates)
+        const progressBar = document.getElementById('progressBar');
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 10;
+            progressBar.value = progress;
+            if (progress >= 100) clearInterval(interval);
+        }, 300);
+    </script>
+
+    <h2>Your transcription is ready!</h2>
+    <a href="/download/<%= transcriptionPath.split('/').pop() %>">Download Transcription</a>
+</body>
+</html>
