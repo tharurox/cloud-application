@@ -4,6 +4,8 @@ const path = require('path');
 const fs = require('fs');
 const ffmpeg = require('fluent-ffmpeg');
 const axios = require('axios');
+const { exec } = require('child_process');
+const { spawn } = require('child_process');
 
 const app = express();
 const port = 3000;
@@ -14,6 +16,7 @@ const ASSEMBLYAI_API_KEY = 'f6ac0ab5e04141dca16baf2571bc8c5a'; // Replace with y
 // Set EJS as the template engine
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
+app.use(express.json());  // For parsing application/json
 
 // Set up multer for file uploads
 const storage = multer.diskStorage({
@@ -57,6 +60,47 @@ app.post('/upload', upload.single('video'), async (req, res) => {
         .run();
 });
 
+// Handle transcription from URL
+app.post('/transcribe_url', (req, res) => {
+    const text = req.body.text;
+
+    console.log('Received text:', text);
+
+    if (text) {
+        // Split the command and arguments for spawn
+        const command = 'transcribe-anything';
+        const args = [text];
+        const childProcess = spawn(command, args);
+
+        let output = '';
+
+        // Capture stdout
+        childProcess.stdout.on('data', (data) => {
+            console.log(`stdout: ${data}`);
+            output += data.toString();
+        });
+
+        // Capture stderr
+        childProcess.stderr.on('data', (data) => {
+            console.error(`stderr: ${data}`);
+            output += `stderr: ${data.toString()}`;
+        });
+
+        // Handle process exit
+        childProcess.on('close', (code) => {
+            console.log(`child process exited with code ${code}`);
+            res.json({ output: output || `Process exited with code ${code}` });
+        });
+
+        // Handle errors
+        childProcess.on('error', (error) => {
+            console.error(`child process error: ${error}`);
+            res.status(500).json({ output: `Error processing the transcription: ${error.message}` });
+        });
+    } else {
+        res.status(400).json({ output: 'No text provided.' });
+    }
+});
 // Download transcription
 app.get('/download/:filename', (req, res) => {
     const filePath = path.join(__dirname, 'transcriptions', req.params.filename);
@@ -123,3 +167,4 @@ async function transcribeAudioWithAssemblyAI(audioPath) {
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
 });
+

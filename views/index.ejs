@@ -4,13 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Transcription</title>
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        /* Inline CSS for simplicity */
+        #transcribeOutput {
+            white-space: pre-wrap; /* Preserves whitespace and line breaks */
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #f9f9f9;
+            font-family: monospace;
+            overflow-x: auto; /* Allows horizontal scrolling if needed */
+        }
+    </style>
 </head>
 <body>
-    <h1>Upload Video for Transcription</h1>
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <input type="file" name="video" required>
-        <button type="submit">Upload and Transcribe</button>
-    </form>
+    <div class="container">
+        <h1>Upload Video for Transcription</h1>
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <input type="file" name="video" accept="video/*" required>
+            <button type="submit">Upload and Transcribe</button>
+        </form>
+
+        <h1>Transcribe from URL</h1>
+        <form id="transcribeForm">
+            <input type="text" id="urlInput" placeholder="Enter text here" required>
+            <button type="button" id="transcribeButton">Transcribe</button>
+        </form>
+
+        <div id="transcribeOutput"></div>
+    </div>
+
+    <script>
+        document.getElementById('transcribeButton').addEventListener('click', async function() {
+            const text = document.getElementById('urlInput').value;
+
+            if (text) {
+                const response = await fetch('/transcribe_url', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+
+                const data = await response.json();
+                document.getElementById('transcribeOutput').textContent = data.output;
+            }
+        });
+    </script>
 </body>
 </html>
+
