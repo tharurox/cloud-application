@@ -4,19 +4,83 @@ const path = require('path');
 const fs = require('fs');
 const ffmpeg = require('fluent-ffmpeg');
 const axios = require('axios');
-const { exec } = require('child_process');
-const { spawn } = require('child_process');
+const bcrypt = require('bcryptjs');
+const session = require('express-session');
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+const sqlite3 = require('sqlite3').verbose();
+const { exec, spawn } = require('child_process');
+const flash = require('connect-flash');
 
 const app = express();
 const port = 3000;
 
-// AssemblyAI API key
 const ASSEMBLYAI_API_KEY = 'f6ac0ab5e04141dca16baf2571bc8c5a'; // Replace with your AssemblyAI API key
 
 // Set EJS as the template engine
+const db = require('./database');
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 app.use(express.json());  // For parsing application/json
+app.use(express.urlencoded({ extended: true })); // To parse form data
+
+// Set up session management
+app.use(session({
+    secret: 'your-secret-key',
+    resave: false,
+    saveUninitialized: false,
+}));
+
+// Use flash middleware
+app.use(flash());
+
+// Initialize SQLite database
+db.serialize(() => {
+    db.run(`CREATE TABLE IF Not Exists users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE,
+        password TEXT
+    )`);
+});
+
+app.use((req, res, next) => {
+    res.locals.success_msg = req.flash('success_msg');
+    res.locals.error_msg = req.flash('error_msg');
+    res.locals.error = req.flash('error');
+    next();
+});
+
+// Initialize Passport for authentication
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.use(new LocalStrategy((username, password, done) => {
+    db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
+        if (err) return done(err);
+        if (!user) return done(null, false, { message: 'Incorrect username.' });
+        bcrypt.compare(password, user.password, (err, isMatch) => {
+            if (err) return done(err);
+            if (isMatch) return done(null, user);
+            return done(null, false, { message: 'Incorrect password.' });
+        });
+    });
+}));
+
+passport.serializeUser((user, done) => {
+    done(null, user.id);
+});
+
+passport.deserializeUser((id, done) => {
+    db.get('SELECT * FROM users WHERE id = ?', [id], (err, user) => {
+        done(err, user);
+    });
+});
+
+// Middleware to check if user is authenticated
+function isAuthenticated(req, res, next) {
+    if (req.isAuthenticated()) return next();
+    res.redirect('/login');
+}
 
 // Set up multer for file uploads
 const storage = multer.diskStorage({
@@ -31,8 +95,72 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // Home page
-app.get('/', (req, res) => {
+app.get('/', isAuthenticated, (req, res) => {
     res.render('index');
+});
+
+// Register page
+app.get('/register', (req, res) => {
+    res.render('register');
+});
+
+app.post('/register', (req, res) => {
+    const { username, password } = req.body;
+    console.log(username, password);
+
+    // Check if the username or password is missing
+    if (!username || !password) {
+        return res.status(400).send('Username and password are required.');
+    }
+
+    // Hash the password
+    bcrypt.hash(password, 10, (err, hash) => {
+        if (err) {
+            console.error('Error hashing password:', err);
+            return res.status(500).send('Error hashing password');
+        }
+
+        // Insert the new user into the database
+        db.run('INSERT INTO users (username, password) VALUES (?, ?)', [username, hash], function (err) {
+            if (err) {
+                console.error('Error inserting user into database:', err);
+                if (err.code === 'SQLITE_CONSTRAINT') {
+                    // This error occurs when the username already exists (unique constraint violation)
+                    return res.status(400).send('Username already exists.');
+                } else {
+                    return res.status(500).send('Error registering user');
+                }
+            }
+
+            // Registration successful, redirect to login page
+            res.redirect('/login');
+        });
+    });
+});
+
+// Login page
+app.get('/login', (req, res) => {
+    res.render('login');
+});
+
+// Use Passport to handle login
+app.post('/login',
+    passport.authenticate('local', {
+        successRedirect: '/',
+        failureRedirect: '/login',
+        failureFlash: true // This now works with connect-flash
+    })
+);
+
+// Logout route
+app.get('/logout', (req, res) => {
+    req.logout(err => {
+        if (err) {
+            console.error('Error during logout:', err);
+            return res.status(500).send('Error during logout');
+        }
+        res.redirect('/login');
+    });
 });
 
 // Handle file upload and transcription
@@ -101,6 +229,7 @@ app.post('/transcribe_url', (req, res) => {
         res.status(400).json({ output: 'No text provided.' });
     }
 });
+
 // Download transcription
 app.get('/download/:filename', (req, res) => {
     const filePath = path.join(__dirname, 'transcriptions', req.params.filename);
@@ -167,4 +296,3 @@ async function transcribeAudioWithAssemblyAI(audioPath) {
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
 });
-
