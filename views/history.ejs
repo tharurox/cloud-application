@@ -1,0 +1,23 @@
+<!-- history.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download History</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Your Download History</h1>
+        <ul>
+            <% files.forEach(file => { %>
+                <li>
+                    <a href="/download/<%= file.file_name %>"><%= file.file_name %></a> (Uploaded on <%= file.created_at %>)
+                </li>
+            <% }) %>
+        </ul>
+        <a href="/">Go back to Upload</a>
+    </div>
+</body>
+</html>

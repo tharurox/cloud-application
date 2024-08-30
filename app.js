@@ -36,10 +36,19 @@ app.use(flash());
 
 // Initialize SQLite database
 db.serialize(() => {
-    db.run(`CREATE TABLE IF Not Exists users (
+    db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
         password TEXT
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS downloads (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        file_name TEXT,
+        file_path TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id)
     )`);
 });
 
@@ -176,6 +185,17 @@ app.post('/upload', upload.single('video'), async (req, res) => {
             try {
                 const transcriptionText = await transcribeAudioWithAssemblyAI(audioPath);
                 fs.writeFileSync(transcriptionPath, transcriptionText);
+
+                // Save the transcription file info to the database
+                const userId = req.user.id;
+                db.run(`INSERT INTO downloads (user_id, file_name, file_path) VALUES (?, ?, ?)`,
+                    [userId, path.basename(transcriptionPath), transcriptionPath],
+                    (err) => {
+                        if (err) {
+                            console.error('Error saving file info to database:', err);
+                        }
+                    });
+
                 res.render('progress', { transcriptionPath });
             } catch (error) {
                 console.error('Transcription error:', error);
@@ -231,6 +251,24 @@ app.post('/transcribe_url', (req, res) => {
 });
 
 // Download transcription
+app.get('/download/:filename', (req, res) => {
+    const filePath = path.join(__dirname, 'transcriptions', req.params.filename);
+    res.download(filePath);
+});
+
+// Route to display download history
+app.get('/history', isAuthenticated, (req, res) => {
+    const userId = req.user.id;
+    db.all(`SELECT * FROM downloads WHERE user_id = ? ORDER BY created_at DESC`, [userId], (err, rows) => {
+        if (err) {
+            console.error('Error fetching download history:', err);
+            return res.status(500).send('Error fetching download history');
+        }
+        res.render('history', { files: rows });
+    });
+});
+
+// Serve download file
 app.get('/download/:filename', (req, res) => {
     const filePath = path.join(__dirname, 'transcriptions', req.params.filename);
     res.download(filePath);
