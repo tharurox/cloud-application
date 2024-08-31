@@ -23,6 +23,25 @@ db.serialize(() => {
             console.error('Error creating downloads table:', err.message);
         }
     });
+
+    // Add source_url column if it does not exist
+    db.run(`PRAGMA table_info(downloads)`, (err, columns) => {
+        if (err) {
+            console.error('Error fetching table info:', err.message);
+            return;
+        }
+        
+        const hasSourceUrl = columns.some(col => col.name === 'source_url');
+        if (!hasSourceUrl) {
+            db.run(`ALTER TABLE downloads ADD COLUMN source_url TEXT`, (err) => {
+                if (err) {
+                    console.error('Error adding source_url column:', err.message);
+                } else {
+                    console.log('Added source_url column to downloads table');
+                }
+            });
+        }
+    });
 });
 
 module.exports = db;
