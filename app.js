@@ -210,7 +210,7 @@ app.post('/upload', upload.single('video'), async (req, res) => {
 
 // Handle transcription from URL
 // Handle transcription from URL
-app.post('/transcribe_url', async (req, res) => {
+app.post('/transcribe_url', isAuthenticated, async (req, res) => {
     const text = req.body.text;
 
     console.log('Received text:', text);
@@ -246,6 +246,16 @@ app.post('/transcribe_url', async (req, res) => {
 
                 // Save the transcription output to a text file
                 fs.writeFileSync(filePath, output);
+
+                // Save the URL and transcription info to the database
+                const userId = req.user.id;
+                db.run(`INSERT INTO downloads (user_id, file_name, file_path, source_url) VALUES (?, ?, ?, ?)`,
+                    [userId, filename, filePath, text],  // Save the URL in the source_url column
+                    (err) => {
+                        if (err) {
+                            console.error('Error saving file info to database:', err);
+                        }
+                    });
 
                 // Send the file as a download to the user
                 res.download(filePath, (err) => {
