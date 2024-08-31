@@ -6,36 +6,82 @@
     <title>Video Transcription</title>
     <link rel="stylesheet" href="/styles.css">
     <style>
-        /* Inline CSS for simplicity */
-        #transcribeOutput {
-            white-space: pre-wrap; /* Preserves whitespace and line breaks */
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #f3f4f6, #ffffff);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        form {
+            margin-bottom: 1.5rem;
+        }
+        input[type="file"], input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
             border: 1px solid #ddd;
-            padding: 10px;
-            background-color: #f9f9f9;
-            font-family: monospace;
-            overflow-x: auto; /* Allows horizontal scrolling if needed */
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: block;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+        button:hover {
+            background-color: #0056b3;
         }
         .logout-button {
-            background-color: #f44336; /* Red background */
-            color: white; /* White text */
-            border: none; /* No border */
-            padding: 10px 20px; /* Padding */
-            text-align: center; /* Centered text */
-            text-decoration: none; /* No underline */
-            display: inline-block; /* Inline block */
-            font-size: 16px; /* Font size */
-            cursor: pointer; /* Pointer cursor on hover */
-            margin-top: 20px; /* Top margin */
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
         }
         .logout-button:hover {
-            background-color: #d32f2f; /* Darker red on hover */
+            background-color: #d32f2f;
         }
-        /* Progress bar styles */
+        #transcribeOutput {
+            white-space: pre-wrap;
+            border: 1px solid #ddd;
+            padding: 1rem;
+            background-color: #f9f9f9;
+            font-family: monospace;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
         #progressBar {
             width: 100%;
-            background-color: #f3f3f3;
-            margin-top: 20px;
-            display: none; /* Hide progress bar initially */
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin-top: 1rem;
+            display: none;
         }
         #progressBar div {
             width: 0%;
@@ -44,6 +90,7 @@
             text-align: center;
             line-height: 30px;
             color: white;
+            border-radius: 4px;
         }
     </style>
 </head>
@@ -57,11 +104,10 @@
 
         <h1>Transcribe from URL</h1>
         <form id="transcribeForm">
-            <input type="text" id="urlInput" placeholder="Enter text here" required>
+            <input type="text" id="urlInput" placeholder="Enter URL or text here" required>
             <button type="button" id="transcribeButton">Transcribe</button>
         </form>
 
-        <!-- Progress bar for transcoding -->
         <div id="progressBar">
             <div>0%</div>
         </div>
@@ -72,7 +118,6 @@
             <button type="submit">History</button>
         </form>
 
-        <!-- Logout Button -->
         <form action="/logout" method="GET">
             <button type="submit" class="logout-button">Logout</button>
         </form>
@@ -83,7 +128,7 @@
             const text = document.getElementById('urlInput').value;
             const progressBar = document.getElementById('progressBar');
             const progressText = progressBar.querySelector('div');
-            progressBar.style.display = 'block'; // Show the progress bar
+            progressBar.style.display = 'block';
             progressText.style.width = '0%';
             progressText.textContent = '0%';
 
@@ -97,7 +142,6 @@
                 });
 
                 if (response.ok) {
-                    // Polling for progress update
                     const reader = response.body.getReader();
                     let receivedLength = 0;
                     const contentLength = +response.headers.get('Content-Length') || 100;
@@ -111,9 +155,8 @@
                         progressText.style.width = `${percentComplete}%`;
                         progressText.textContent = `${percentComplete}%`;
 
-                        // Display the result when done
                         if (percentComplete === 100) {
-                            progressBar.style.display = 'none'; // Hide the progress bar when complete
+                            progressBar.style.display = 'none';
                             const data = await new TextDecoder('utf-8').decode(value);
                             document.getElementById('transcribeOutput').textContent = data;
                         }
