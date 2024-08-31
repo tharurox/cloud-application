@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  web:
+    image: my-web-image:latest
+    container_name: my_web_container
+    ports:
+      - "80:80"
+    volumes:
+      - ./app:/app
+    environment:
+      - DATABASE_URL=mysql://db:3306/mydatabase
+    depends_on:
+      - db
+    networks:
+      - my-network
+
+  db:
+    image: mysql:5.7
+    container_name: my_db_container
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: mydatabase
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - my-network
+
+volumes:
+  db_data:
+
+networks:
+  my-network:

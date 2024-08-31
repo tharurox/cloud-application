@@ -19,7 +19,7 @@ RUN mv cloud-application app
 
 WORKDIR /opt/app
 
-RUN npm install express multer fluent-ffmpeg ejs axios fs form-data bcryptjs express-session sqlite3 passport passport-local connect-flash
+RUN npm install express multer fluent-ffmpeg ejs axios fs form-data
 
 EXPOSE 3000
-CMD [ "node", "app.js" ]
+CMD [ "node", "app.js"]

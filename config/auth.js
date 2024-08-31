@@ -1,7 +1,7 @@
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const bcrypt = require('bcryptjs');
-const db = require('./database');
+const db = require('./config/database');
 
 passport.use(new LocalStrategy((username, password, done) => {
     db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {

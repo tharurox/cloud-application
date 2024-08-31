@@ -18,7 +18,7 @@ const port = 3000;
 const ASSEMBLYAI_API_KEY = 'f6ac0ab5e04141dca16baf2571bc8c5a'; // Replace with your AssemblyAI API key
 
 // Set EJS as the template engine
-const db = require('./database');
+const db = require('./config/database');
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 app.use(express.json());  // For parsing application/json
