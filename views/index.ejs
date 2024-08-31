@@ -30,6 +30,21 @@
         .logout-button:hover {
             background-color: #d32f2f; /* Darker red on hover */
         }
+        /* Progress bar styles */
+        #progressBar {
+            width: 100%;
+            background-color: #f3f3f3;
+            margin-top: 20px;
+            display: none; /* Hide progress bar initially */
+        }
+        #progressBar div {
+            width: 0%;
+            height: 30px;
+            background-color: #4caf50;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -46,6 +61,11 @@
             <button type="button" id="transcribeButton">Transcribe</button>
         </form>
 
+        <!-- Progress bar for transcoding -->
+        <div id="progressBar">
+            <div>0%</</div>
+        </div>
+
         <div id="transcribeOutput"></div>
         
         <form action="/history" method="GET">
@@ -61,6 +81,11 @@
     <script>
         document.getElementById('transcribeButton').addEventListener('click', async function() {
             const text = document.getElementById('urlInput').value;
+            const progressBar = document.getElementById('progressBar');
+            const progressText = progressBar.querySelector('div');
+            progressBar.style.display = 'block'; // Show the progress bar
+            progressText.style.width = '0%';
+            progressText.textContent = '0%';
 
             if (text) {
                 const response = await fetch('/transcribe_url', {
@@ -71,8 +96,31 @@
                     body: JSON.stringify({ text: text })
                 });
 
-                const data = await response.json();
-                document.getElementById('transcribeOutput').textContent = data.output;
+                if (response.ok) {
+                    // Polling for progress update
+                    const reader = response.body.getReader();
+                    let receivedLength = 0;
+                    const contentLength = +response.headers.get('Content-Length') || 100;
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        receivedLength += value.length;
+                        const percentComplete = Math.round((receivedLength / contentLength) * 100);
+                        progressText.style.width = `${percentComplete}%`;
+                        progressText.textContent = `${percentComplete}%`;
+
+                        // Display the result when done
+                        if (percentComplete === 100) {
+                            progressBar.style.display = 'none'; // Hide the progress bar when complete
+                            const data = await new TextDecoder('utf-8').decode(value);
+                            document.getElementById('transcribeOutput').textContent = data;
+                        }
+                    }
+                } else {
+                    document.getElementById('transcribeOutput').textContent = 'Transcription failed.';
+                }
             }
         });
     </script>
