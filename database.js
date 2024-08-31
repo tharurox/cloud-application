@@ -14,7 +14,7 @@ db.serialize(() => {
         user_id INTEGER,
         file_name TEXT,
         file_path TEXT,
-        source_url TEXT,  // Add this line to store the URL
+        source_url TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(user_id) REFERENCES users(id)
     )`);
