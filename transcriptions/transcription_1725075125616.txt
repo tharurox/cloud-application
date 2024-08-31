@@ -1,0 +1,28 @@
+[facebook] Extracting URL: https://www.facebook.com/107894531162534/videos/444792889990153
+[facebook] 444792889990153: Downloading webpage
+[info] 444792889990153: Downloading 1 format(s): sd
+[download] Destination: out.mp4
+[download]   0.6% of  156.13KiB at  Unknown B/s ETA Unknown[download]   1.9% of  156.13KiB at    1.68MiB/s ETA 00:00  [download]   4.5% of  156.13KiB at    2.70MiB/s ETA 00:00[download]   9.6% of  156.13KiB at    3.54MiB/s ETA 00:00[download]  19.9% of  156.13KiB at    6.04MiB/s ETA 00:00[download]  40.3% of  156.13KiB at    8.44MiB/s ETA 00:00[download]  81.3% of  156.13KiB at   13.09MiB/s ETA 00:00[download] 100.0% of  156.13KiB at   14.04MiB/s ETA 00:00[download] 100% of  156.13KiB in 00:00:00 at 1.30MiB/s   
+stderr: Downloading complete.
+stderr: Running:
+  whisper "/tmp/tmprn2ad5i3.wav" --device cpu --model small --output_dir "/tmp/tmpmc3t1mpc" --task transcribe
+stderr: /usr/local/lib/python3.9/site-packages/whisper/transcribe.py:78: UserWarning: FP16 is not supported on CPU; using FP32 instead
+  warnings.warn("FP16 is not supported on CPU; using FP32 instead")
+stderr: /usr/local/lib/python3.9/site-packages/transformers/tokenization_utils_base.py:1601: FutureWarning: `clean_up_tokenization_spaces` was not set. It will be set to `True` by default. This behavior will be depracted in transformers v4.45, and will be then set to `False` by default. For more details check this issue: https://github.com/huggingface/transformers/issues/31884
+  warnings.warn(
+Detecting language using up to the first 30 seconds. Use `--language` to specify the language
+Detected language: English
+[00:00.000 --> 00:07.000]  If you're talking they will hear you every single time
+[00:07.000 --> 00:23.000]  Allow the words to break through by seeing that I
+Unknown args: []
+Running transcribe_audio on https://www.facebook.com/107894531162534/videos/444792889990153
+making dir text_Small Conversations matter
+Using temporary directory /tmp/tmpbs1arvq6
+Running:
+  yt-dlp --no-check-certificate https://www.facebook.com/107894531162534/videos/444792889990153 -o "out.%(ext)s"
+Downloaded file:  /tmp/tmpbs1arvq6/out.mp4
+Running:
+  ffmpeg -y -i "/tmp/tmpbs1arvq6/out.mp4" -filter:a speechnorm=e=12.5:r=0.00001:l=1 -acodec pcm_s16le -ar 44100 -ac 1 "/tmp/tmp0azolzy3.wav"
+WARNING: NOT using GPU acceleration, using 10x slower CPU instead.
+Using device cpu
+Running whisper on /tmp/tmprn2ad5i3.wav (will install models on first run)
