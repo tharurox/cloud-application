@@ -76,21 +76,20 @@
             border-radius: 4px;
             overflow-x: auto;
         }
-        #progressBar {
-            width: 100%;
-            background-color: #e0e0e0;
-            border-radius: 4px;
-            margin-top: 1rem;
+        #loadingSpinner {
             display: none;
+            border: 8px solid #f3f3f3; /* Light grey */
+            border-top: 8px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+            margin-top: 1rem;
         }
-        #progressBar div {
-            width: 0%;
-            height: 30px;
-            background-color: #4caf50;
-            text-align: center;
-            line-height: 30px;
-            color: white;
-            border-radius: 4px;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -108,9 +107,7 @@
             <button type="button" id="transcribeButton">Transcribe</button>
         </form>
 
-        <div id="progressBar">
-            <div>0%</div>
-        </div>
+        <div id="loadingSpinner"></div>
 
         <div id="transcribeOutput"></div>
         
@@ -126,11 +123,8 @@
     <script>
         document.getElementById('transcribeButton').addEventListener('click', async function() {
             const text = document.getElementById('urlInput').value;
-            const progressBar = document.getElementById('progressBar');
-            const progressText = progressBar.querySelector('div');
-            progressBar.style.display = 'block';
-            progressText.style.width = '0%';
-            progressText.textContent = '0%';
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            loadingSpinner.style.display = 'block'; // Show the loading spinner
 
             if (text) {
                 const response = await fetch('/transcribe_url', {
@@ -151,17 +145,15 @@
                         if (done) break;
 
                         receivedLength += value.length;
-                        const percentComplete = Math.round((receivedLength / contentLength) * 100);
-                        progressText.style.width = `${percentComplete}%`;
-                        progressText.textContent = `${percentComplete}%`;
 
-                        if (percentComplete === 100) {
-                            progressBar.style.display = 'none';
+                        if (receivedLength >= contentLength) {
+                            loadingSpinner.style.display = 'none'; // Hide the loading spinner
                             const data = await new TextDecoder('utf-8').decode(value);
                             document.getElementById('transcribeOutput').textContent = data;
                         }
                     }
                 } else {
+                    loadingSpinner.style.display = 'none'; // Hide the loading spinner
                     document.getElementById('transcribeOutput').textContent = 'Transcription failed.';
                 }
             }
