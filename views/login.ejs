@@ -63,6 +63,7 @@
             border-radius: 4px;
             margin-bottom: 1rem;
             font-size: 1rem;
+            display: none; /* Default to hidden */
         }
         .alert-success {
             background-color: #d4edda;
@@ -73,6 +74,9 @@
             background-color: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
+        }
+        .alert-show {
+            display: block; /* Show only when alert-show class is added */
         }
         p {
             text-align: center;
@@ -91,13 +95,13 @@
 <body>
     <div class="container">
         <% if (error_msg) { %>
-            <div class="alert alert-danger"><%= error_msg %></div>
+            <div class="alert alert-danger alert-show"><%= error_msg %></div>
         <% } %>
         <% if (error) { %>
-            <div class="alert alert-danger"><%= error %></div>
+            <div class="alert alert-danger alert-show"><%= error %></div>
         <% } %>
         <% if (success_msg) { %>
-            <div class="alert alert-success"><%= success_msg %></div>
+            <div class="alert alert-success alert-show"><%= success_msg %></div>
         <% } %>
 
         <h1>Login</h1>
