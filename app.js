@@ -212,7 +212,7 @@ app.post('/transcribe_url', async (req, res) => {
     const text = req.body.text;
 
     if (text) {
-        const command = 'transcribe-anything';
+        const command = 'transcribe-anything'; // Replace with actual command
         const args = [text];
         const childProcess = spawn(command, args);
 
@@ -229,12 +229,12 @@ app.post('/transcribe_url', async (req, res) => {
         });
 
         childProcess.on('close', (code) => {
-            res.write(`Process exited with code ${code}`);
+            res.write(`\nProcess exited with code ${code}`);
             res.end();
         });
 
         childProcess.on('error', (error) => {
-            res.write(`Error processing the transcription: ${error.message}`);
+            res.write(`\nError processing the transcription: ${error.message}`);
             res.end();
         });
     } else {
