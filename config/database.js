@@ -24,13 +24,14 @@ db.serialize(() => {
         }
     });
 
-    // Add source_url column if it does not exist
-    db.run(`PRAGMA table_info(downloads)`, (err, columns) => {
+    // Check for the existence of the source_url column and add it if it doesn't exist
+    db.all(`PRAGMA table_info(downloads)`, (err, columns) => {
         if (err) {
             console.error('Error fetching table info:', err.message);
             return;
         }
-        
+
+        // Check if source_url column exists
         const hasSourceUrl = columns.some(col => col.name === 'source_url');
         if (!hasSourceUrl) {
             db.run(`ALTER TABLE downloads ADD COLUMN source_url TEXT`, (err) => {
