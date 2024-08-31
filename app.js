@@ -209,7 +209,8 @@ app.post('/upload', upload.single('video'), async (req, res) => {
 });
 
 // Handle transcription from URL
-app.post('/transcribe_url', (req, res) => {
+// Handle transcription from URL
+app.post('/transcribe_url', async (req, res) => {
     const text = req.body.text;
 
     console.log('Received text:', text);
@@ -237,7 +238,25 @@ app.post('/transcribe_url', (req, res) => {
         // Handle process exit
         childProcess.on('close', (code) => {
             console.log(`child process exited with code ${code}`);
-            res.json({ output: output || `Process exited with code ${code}` });
+
+            if (code === 0) {
+                const timestamp = Date.now();
+                const filename = `transcription_${timestamp}.txt`;
+                const filePath = path.join(__dirname, 'transcriptions', filename);
+
+                // Save the transcription output to a text file
+                fs.writeFileSync(filePath, output);
+
+                // Send the file as a download to the user
+                res.download(filePath, (err) => {
+                    if (err) {
+                        console.error('Error sending file:', err);
+                        res.status(500).send('Error downloading file');
+                    }
+                });
+            } else {
+                res.status(500).json({ output: `Process exited with code ${code}` });
+            }
         });
 
         // Handle errors
