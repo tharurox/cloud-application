@@ -105,7 +105,7 @@ const upload = multer({ storage: storage });
 
 // Home page
 app.get('/', isAuthenticated, (req, res) => {
-    res.render('index', { username: req.user.username });
+    res.render('index');
 });
 
 // Register page
@@ -115,6 +115,7 @@ app.get('/register', (req, res) => {
 
 app.post('/register', (req, res) => {
     const { username, password } = req.body;
+    console.log(username, password);
 
     // Check if the username or password is missing
     if (!username || !password) {
@@ -208,37 +209,63 @@ app.post('/upload', upload.single('video'), async (req, res) => {
 });
 
 // Handle transcription from URL
+// Handle transcription from URL
 app.post('/transcribe_url', async (req, res) => {
     const text = req.body.text;
 
+    console.log('Received text:', text);
+
     if (text) {
-        const command = 'transcribe-anything'; // Replace with actual command
+        // Split the command and arguments for spawn
+        const command = 'transcribe-anything';
         const args = [text];
         const childProcess = spawn(command, args);
 
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
+        let output = '';
 
+        // Capture stdout
         childProcess.stdout.on('data', (data) => {
-            res.write(data);
+            console.log(`stdout: ${data}`);
+            output += data.toString();
         });
 
+        // Capture stderr
         childProcess.stderr.on('data', (data) => {
-            res.write(`stderr: ${data.toString()}`);
+            console.error(`stderr: ${data}`);
+            output += `stderr: ${data.toString()}`;
         });
 
+        // Handle process exit
         childProcess.on('close', (code) => {
-            res.write(`\nProcess exited with code ${code}`);
-            res.end();
+            console.log(`child process exited with code ${code}`);
+
+            if (code === 0) {
+                const timestamp = Date.now();
+                const filename = `transcription_${timestamp}.txt`;
+                const filePath = path.join(__dirname, 'transcriptions', filename);
+
+                // Save the transcription output to a text file
+                fs.writeFileSync(filePath, output);
+
+                // Send the file as a download to the user
+                res.download(filePath, (err) => {
+                    if (err) {
+                        console.error('Error sending file:', err);
+                        res.status(500).send('Error downloading file');
+                    }
+                });
+            } else {
+                res.status(500).json({ output: `Process exited with code ${code}` });
+            }
         });
 
+        // Handle errors
         childProcess.on('error', (error) => {
-            res.write(`\nError processing the transcription: ${error.message}`);
-            res.end();
+            console.error(`child process error: ${error}`);
+            res.status(500).json({ output: `Error processing the transcription: ${error.message}` });
         });
     } else {
-        res.status(400).send('No text provided.');
+        res.status(400).json({ output: 'No text provided.' });
     }
 });
 
@@ -258,6 +285,12 @@ app.get('/history', isAuthenticated, (req, res) => {
         }
         res.render('history', { files: rows });
     });
+});
+
+// Serve download file
+app.get('/download/:filename', (req, res) => {
+    const filePath = path.join(__dirname, 'transcriptions', req.params.filename);
+    res.download(filePath);
 });
 
 // Transcribe audio using AssemblyAI
