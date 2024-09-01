@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Launch an EC2 instance from a specified launch template
+
+Parameters:
+  LaunchTemplateId:
+    Type: String
+    Default: lt-028e3170490de39c7
+    Description: The ID of the launch template to use for creating the EC2 instance.
+
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplateId
+        Version: '$Latest'
+      Tags:
+        - Key: Name
+          Value: EC2InstanceFromLaunchTemplate
+
+Outputs:
+  InstanceId:
+    Description: The Instance ID of the launched EC2 instance.
+    Value: !Ref EC2Instance
+  PublicIP:
+    Description: The public IP address of the launched EC2 instance.
+    Value: !GetAtt EC2Instance.PublicIp

@@ -93,7 +93,7 @@
 </head>
 
 <body>
-    <div class="container">
+    <div class = container>
         <% if (error_msg) { %>
             <div class="alert alert-danger alert-show"><%= error_msg %></div>
         <% } %>
@@ -103,7 +103,8 @@
         <% if (success_msg) { %>
             <div class="alert alert-success alert-show"><%= success_msg %></div>
         <% } %>
-
+    </div>
+    <div class="container">
         <h1>Login</h1>
         <form action="/login" method="POST">
             <div class="form-group">
