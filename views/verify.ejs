@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Account</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Verify Your Account</h1>
+
+        <% if (error_msg) { %>
+            <div class="alert alert-danger"><%= error_msg %></div>
+        <% } %>
+
+        <% if (success_msg) { %>
+            <div class="alert alert-success"><%= success_msg %></div>
+        <% } %>
+
+        <p>We have sent a verification code to <%= username %>. Please enter it below to verify your account.</p>
+
+        <form action="/verify" method="POST">
+            <div>
+                <label for="verificationCode">Verification Code:</label>
+                <input type="text" id="verificationCode" name="verificationCode" required>
+            </div>
+            <button type="submit">Verify</button>
+        </form>
+    </div>
+</body>
+</html>

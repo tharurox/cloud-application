@@ -4,16 +4,25 @@ const path = require('path');
 const fs = require('fs');
 const ffmpeg = require('fluent-ffmpeg');
 const axios = require('axios');
-const bcrypt = require('bcryptjs');
 const session = require('express-session');
-const passport = require('passport');
-const LocalStrategy = require('passport-local').Strategy;
-const sqlite3 = require('sqlite3').verbose();
-const { exec, spawn } = require('child_process');
+const { CognitoUserPool, CognitoUserAttribute, CognitoUser, AuthenticationDetails } = require('amazon-cognito-identity-js');
+const AWS = require('aws-sdk');
+const jwt = require('jsonwebtoken');
 const flash = require('connect-flash');
 
 const app = express();
 const port = 3000;
+
+// AWS Cognito Pool Info
+const poolData = {
+    UserPoolId: 'ap-southeast-2_Up85TT9kx', // Replace with your User Pool ID
+    ClientId: '3jlv0og5l1mkjnq1tdb7bg3ini'  // Replace with your App Client ID
+};
+const userPool = new CognitoUserPool(poolData);
+
+AWS.config.update({
+    region: 'ap-southeast-2'
+});
 
 const ASSEMBLYAI_API_KEY = 'f6ac0ab5e04141dca16baf2571bc8c5a'; // Replace with your AssemblyAI API key
 
@@ -21,8 +30,8 @@ const ASSEMBLYAI_API_KEY = 'f6ac0ab5e04141dca16baf2571bc8c5a'; // Replace with y
 const db = require('./config/database');
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
-app.use(express.json());  // For parsing application/json
-app.use(express.urlencoded({ extended: true })); // To parse form data
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Set up session management
 app.use(session({
@@ -34,24 +43,6 @@ app.use(session({
 // Use flash middleware
 app.use(flash());
 
-// Initialize SQLite database
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE,
-        password TEXT
-    )`);
-
-    db.run(`CREATE TABLE IF NOT EXISTS downloads (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        file_name TEXT,
-        file_path TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(user_id) REFERENCES users(id)
-    )`);
-});
-
 app.use((req, res, next) => {
     res.locals.success_msg = req.flash('success_msg');
     res.locals.error_msg = req.flash('error_msg');
@@ -59,36 +50,37 @@ app.use((req, res, next) => {
     next();
 });
 
-// Initialize Passport for authentication
-app.use(passport.initialize());
-app.use(passport.session());
-
-passport.use(new LocalStrategy((username, password, done) => {
-    db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
-        if (err) return done(err);
-        if (!user) return done(null, false, { message: 'Incorrect username.' });
-        bcrypt.compare(password, user.password, (err, isMatch) => {
-            if (err) return done(err);
-            if (isMatch) return done(null, user);
-            return done(null, false, { message: 'Incorrect password.' });
-        });
-    });
-}));
-
-passport.serializeUser((user, done) => {
-    done(null, user.id);
-});
-
-passport.deserializeUser((id, done) => {
-    db.get('SELECT * FROM users WHERE id = ?', [id], (err, user) => {
-        done(err, user);
-    });
-});
-
 // Middleware to check if user is authenticated
 function isAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) return next();
+    if (req.session && req.session.user) {
+        return next();
+    }
     res.redirect('/login');
+}
+
+// Function to handle AWS Cognito login
+function cognitoLogin(username, password, req, res) {
+    const authDetails = new AuthenticationDetails({
+        Username: username,
+        Password: password
+    });
+
+    const cognitoUser = new CognitoUser({
+        Username: username,
+        Pool: userPool
+    });
+
+    cognitoUser.authenticateUser(authDetails, {
+        onSuccess: (result) => {
+            const idToken = result.getIdToken().getJwtToken();
+            req.session.user = jwt.decode(idToken);
+            res.redirect('/');
+        },
+        onFailure: (err) => {
+            req.flash('error_msg', 'Authentication failed. Please try again.');
+            res.redirect('/login');
+        }
+    });
 }
 
 // Set up multer for file uploads
@@ -113,37 +105,69 @@ app.get('/register', (req, res) => {
     res.render('register');
 });
 
+// Handle user registration POST request
 app.post('/register', (req, res) => {
     const { username, password } = req.body;
-    console.log(username, password);
 
-    // Check if the username or password is missing
+    // Validate form input
     if (!username || !password) {
-        return res.status(400).send('Username and password are required.');
+        req.flash('error_msg', 'Username and password are required.');
+        return res.redirect('/register');
     }
 
-    // Hash the password
-    bcrypt.hash(password, 10, (err, hash) => {
+    // Create CognitoUserAttributes
+    const attributeList = [];
+    const emailAttribute = new CognitoUserAttribute({
+        Name: 'email',
+        Value: username, // Assuming username is the email, adjust if needed
+    });
+    attributeList.push(emailAttribute);
+
+    // Call AWS Cognito signUp method to register the user
+    userPool.signUp(username, password, attributeList, null, (err, data) => {
         if (err) {
-            console.error('Error hashing password:', err);
-            return res.status(500).send('Error hashing password');
+            req.flash('error_msg', `Error registering user: ${err.message}`);
+            return res.redirect('/register');
         }
 
-        // Insert the new user into the database
-        db.run('INSERT INTO users (username, password) VALUES (?, ?)', [username, hash], function (err) {
-            if (err) {
-                console.error('Error inserting user into database:', err);
-                if (err.code === 'SQLITE_CONSTRAINT') {
-                    // This error occurs when the username already exists (unique constraint violation)
-                    return res.status(400).send('Username already exists.');
-                } else {
-                    return res.status(500).send('Error registering user');
-                }
-            }
+        // Save username in session for verification step
+        req.session.username = username;
+        req.flash('success_msg', 'Registration successful! Please verify your account.');
+        
+        // Redirect to verify page after registration success
+        res.redirect('/verify');
+    });
+});
 
-            // Registration successful, redirect to login page
-            res.redirect('/login');
-        });
+// Verify page
+app.get('/verify', (req, res) => {
+    if (!req.session.username) {
+        req.flash('error_msg', 'You need to register first.');
+        return res.redirect('/register');
+    }
+    res.render('verify', { username: req.session.username });
+});
+
+// Handle verification code submission
+app.post('/verify', (req, res) => {
+    const { username } = req.session;
+    const { verificationCode } = req.body;
+
+    const userData = {
+        Username: username,
+        Pool: userPool,
+    };
+
+    const cognitoUser = new CognitoUser(userData);
+
+    cognitoUser.confirmRegistration(verificationCode, true, (err, result) => {
+        if (err) {
+            req.flash('error_msg', `Verification failed: ${err.message}`);
+            return res.redirect('/verify');
+        }
+
+        req.flash('success_msg', 'Your account has been verified! You can now log in.');
+        res.redirect('/login');
     });
 });
 
@@ -152,18 +176,49 @@ app.get('/login', (req, res) => {
     res.render('login');
 });
 
-// Use Passport to handle login
-app.post('/login',
-    passport.authenticate('local', {
-        successRedirect: '/',
-        failureRedirect: '/login',
-        failureFlash: true // This now works with connect-flash
-    })
-);
+
+// AWS Cognito Login handler
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) {
+        req.flash('error_msg', 'Username and password are required.');
+        return res.redirect('/login');
+    }
+
+    const authDetails = new AuthenticationDetails({
+        Username: username,
+        Password: password
+    });
+
+    const cognitoUser = new CognitoUser({
+        Username: username,
+        Pool: userPool
+    });
+
+    cognitoUser.authenticateUser(authDetails, {
+        onSuccess: (result) => {
+            const idToken = result.getIdToken().getJwtToken();
+            req.session.user = jwt.decode(idToken);
+            res.redirect('/');
+        },
+        onFailure: (err) => {
+            console.log('Cognito Authentication Error: ', err);  // Log the actual error
+            if (err.code === 'UserNotConfirmedException') {
+                req.flash('error_msg', 'Account not verified. Please check your email for the verification code.');
+                return res.redirect('/verify'); // Redirect to verify page
+            } else if (err.code === 'NotAuthorizedException') {
+                req.flash('error_msg', 'Incorrect username or password.');
+            } else {
+                req.flash('error_msg', `Authentication failed: ${err.message}`);
+            }
+            res.redirect('/login');
+        }
+    });
+});
 
 // Logout route
 app.get('/logout', (req, res) => {
-    req.logout(err => {
+    req.session.destroy((err) => {
         if (err) {
             console.error('Error during logout:', err);
             return res.status(500).send('Error during logout');
@@ -178,7 +233,6 @@ app.post('/upload', upload.single('video'), async (req, res) => {
     const audioPath = `uploads/${Date.now()}.mp3`;
     const transcriptionPath = `transcriptions/${Date.now()}.txt`;
 
-    // Extract audio from video
     ffmpeg(videoPath)
         .output(audioPath)
         .on('end', async () => {
@@ -187,7 +241,7 @@ app.post('/upload', upload.single('video'), async (req, res) => {
                 fs.writeFileSync(transcriptionPath, transcriptionText);
 
                 // Save the transcription file info to the database
-                const userId = req.user.id;
+                const userId = req.session.user.sub;
                 db.run(`INSERT INTO downloads (user_id, file_name, file_path) VALUES (?, ?, ?)`,
                     [userId, path.basename(transcriptionPath), transcriptionPath],
                     (err) => {
@@ -209,14 +263,12 @@ app.post('/upload', upload.single('video'), async (req, res) => {
 });
 
 // Handle transcription from URL
-// Handle transcription from URL
 app.post('/transcribe_url', isAuthenticated, async (req, res) => {
     const text = req.body.text;
 
     console.log('Received text:', text);
 
     if (text) {
-        // Split the command and arguments for spawn
         const command = 'transcribe-anything';
         const args = [text];
         const childProcess = spawn(command, args);
@@ -237,27 +289,22 @@ app.post('/transcribe_url', isAuthenticated, async (req, res) => {
 
         // Handle process exit
         childProcess.on('close', (code) => {
-            console.log(`child process exited with code ${code}`);
-
             if (code === 0) {
                 const timestamp = Date.now();
                 const filename = `transcription_${timestamp}.txt`;
                 const filePath = path.join(__dirname, 'transcriptions', filename);
 
-                // Save the transcription output to a text file
                 fs.writeFileSync(filePath, output);
 
-                // Save the URL and transcription info to the database
-                const userId = req.user.id;
+                const userId = req.session.user.sub;
                 db.run(`INSERT INTO downloads (user_id, file_name, file_path, source_url) VALUES (?, ?, ?, ?)`,
-                    [userId, filename, filePath, text],  // Save the URL in the source_url column
+                    [userId, filename, filePath, text],
                     (err) => {
                         if (err) {
                             console.error('Error saving file info to database:', err);
                         }
                     });
 
-                // Send the file as a download to the user
                 res.download(filePath, (err) => {
                     if (err) {
                         console.error('Error sending file:', err);
@@ -269,7 +316,6 @@ app.post('/transcribe_url', isAuthenticated, async (req, res) => {
             }
         });
 
-        // Handle errors
         childProcess.on('error', (error) => {
             console.error(`child process error: ${error}`);
             res.status(500).json({ output: `Error processing the transcription: ${error.message}` });
@@ -285,9 +331,9 @@ app.get('/download/:filename', (req, res) => {
     res.download(filePath);
 });
 
-// Route to display download history
+// Display download history
 app.get('/history', isAuthenticated, (req, res) => {
-    const userId = req.user.id;
+    const userId = req.session.user.sub;
     db.all(`SELECT * FROM downloads WHERE user_id = ? ORDER BY created_at DESC`, [userId], (err, rows) => {
         if (err) {
             console.error('Error fetching download history:', err);
@@ -297,15 +343,8 @@ app.get('/history', isAuthenticated, (req, res) => {
     });
 });
 
-// Serve download file
-app.get('/download/:filename', (req, res) => {
-    const filePath = path.join(__dirname, 'transcriptions', req.params.filename);
-    res.download(filePath);
-});
-
 // Transcribe audio using AssemblyAI
 async function transcribeAudioWithAssemblyAI(audioPath) {
-    // Upload the audio file to AssemblyAI
     const uploadResponse = await axios({
         method: 'post',
         url: 'https://api.assemblyai.com/v2/upload',
@@ -318,7 +357,6 @@ async function transcribeAudioWithAssemblyAI(audioPath) {
 
     const audioUrl = uploadResponse.data.upload_url;
 
-    // Request transcription
     const transcriptResponse = await axios({
         method: 'post',
         url: 'https://api.assemblyai.com/v2/transcript',
@@ -333,7 +371,6 @@ async function transcribeAudioWithAssemblyAI(audioPath) {
 
     const transcriptId = transcriptResponse.data.id;
 
-    // Wait for the transcription to complete
     let transcriptionCompleted = false;
     let transcriptionText = '';
     while (!transcriptionCompleted) {
@@ -351,7 +388,6 @@ async function transcribeAudioWithAssemblyAI(audioPath) {
         } else if (transcriptStatusResponse.data.status === 'failed') {
             throw new Error('Transcription failed');
         } else {
-            // Wait for a few seconds before checking the status again
             await new Promise(resolve => setTimeout(resolve, 5000));
         }
     }
