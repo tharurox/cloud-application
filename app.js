@@ -77,11 +77,54 @@ function cognitoLogin(username, password, req, res) {
             res.redirect('/');
         },
         onFailure: (err) => {
-            req.flash('error_msg', 'Authentication failed. Please try again.');
+            req.flash('error_msg', `Authentication failed: ${err.message}`);
             res.redirect('/login');
+        },
+        newPasswordRequired: (userAttributes, requiredAttributes) => {
+            // Cognito is asking for the user to set a new password
+            req.session.userAttributes = userAttributes;
+            req.session.requiredAttributes = requiredAttributes;
+            req.session.username = username;
+            req.flash('success_msg', 'You are required to set a new password.');
+            res.redirect('/change-password'); // Redirect to a page to change the password
         }
     });
 }
+
+// Change password page
+app.get('/change-password', (req, res) => {
+    if (!req.session.username || !req.session.userAttributes) {
+        req.flash('error_msg', 'You need to login first.');
+        return res.redirect('/login');
+    }
+    res.render('change-password', { username: req.session.username });
+});
+
+// Handle new password submission
+app.post('/change-password', (req, res) => {
+    const { newPassword } = req.body;
+    const username = req.session.username;
+    const userAttributes = req.session.userAttributes;
+
+    const cognitoUser = new CognitoUser({
+        Username: username,
+        Pool: userPool
+    });
+
+    cognitoUser.completeNewPasswordChallenge(newPassword, userAttributes, {
+        onSuccess: (result) => {
+            const idToken = result.getIdToken().getJwtToken();
+            req.session.user = jwt.decode(idToken);
+            req.flash('success_msg', 'Password changed successfully! You are now logged in.');
+            res.redirect('/');
+        },
+        onFailure: (err) => {
+            req.flash('error_msg', `Password change failed: ${err.message}`);
+            res.redirect('/change-password');
+        }
+    });
+});
+
 
 // Set up multer for file uploads
 const storage = multer.diskStorage({
