@@ -58,7 +58,6 @@ function isAuthenticated(req, res, next) {
     res.redirect('/login');
 }
 
-// Function to handle AWS Cognito login
 function cognitoLogin(username, password, req, res) {
     const authDetails = new AuthenticationDetails({
         Username: username,
@@ -85,20 +84,42 @@ function cognitoLogin(username, password, req, res) {
             req.session.userAttributes = userAttributes;
             req.session.requiredAttributes = requiredAttributes;
             req.session.username = username;
-            req.flash('success_msg', 'You are required to set a new password.');
-            res.redirect('/change-password'); // Redirect to a page to change the password
+            req.session.password = password; // Save original password
+            req.flash('success_msg', 'You need to change your password.');
+            res.redirect('/change-password'); // Redirect to the page to change the password
         }
     });
 }
-
-// Change password page
 app.get('/change-password', (req, res) => {
-    if (!req.session.username || !req.session.userAttributes) {
-        req.flash('error_msg', 'You need to login first.');
+    if (!req.session.username) {
+        req.flash('error_msg', 'Invalid session. Please log in again.');
         return res.redirect('/login');
     }
     res.render('change-password', { username: req.session.username });
 });
+
+app.post('/change-password', (req, res) => {
+    const { newPassword } = req.body;
+
+    const cognitoUser = new CognitoUser({
+        Username: req.session.username,
+        Pool: userPool
+    });
+
+    cognitoUser.completeNewPasswordChallenge(newPassword, req.session.userAttributes, {
+        onSuccess: (result) => {
+            const idToken = result.getIdToken().getJwtToken();
+            req.session.user = jwt.decode(idToken);
+            req.flash('success_msg', 'Password changed successfully! You are now logged in.');
+            res.redirect('/');
+        },
+        onFailure: (err) => {
+            req.flash('error_msg', `Password change failed: ${err.message}`);
+            res.redirect('/change-password');
+        }
+    });
+});
+
 
 // Handle new password submission
 app.post('/change-password', (req, res) => {
@@ -181,35 +202,25 @@ app.post('/register', (req, res) => {
         res.redirect('/verify');
     });
 });
-
-// Verify page
 app.get('/verify', (req, res) => {
-    if (!req.session.username) {
-        req.flash('error_msg', 'You need to register first.');
-        return res.redirect('/register');
-    }
-    res.render('verify', { username: req.session.username });
+    res.render('verify');
 });
 
-// Handle verification code submission
 app.post('/verify', (req, res) => {
-    const { username } = req.session;
-    const { verificationCode } = req.body;
+    const { username, code } = req.body;
 
-    const userData = {
+    const cognitoUser = new CognitoUser({
         Username: username,
-        Pool: userPool,
-    };
+        Pool: userPool
+    });
 
-    const cognitoUser = new CognitoUser(userData);
-
-    cognitoUser.confirmRegistration(verificationCode, true, (err, result) => {
+    cognitoUser.confirmRegistration(code, true, (err, result) => {
         if (err) {
             req.flash('error_msg', `Verification failed: ${err.message}`);
             return res.redirect('/verify');
         }
 
-        req.flash('success_msg', 'Your account has been verified! You can now log in.');
+        req.flash('success_msg', 'Account verified! You can now log in.');
         res.redirect('/login');
     });
 });
@@ -219,10 +230,10 @@ app.get('/login', (req, res) => {
     res.render('login');
 });
 
-
 // AWS Cognito Login handler
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
+    
     if (!username || !password) {
         req.flash('error_msg', 'Username and password are required.');
         return res.redirect('/login');
@@ -246,6 +257,7 @@ app.post('/login', (req, res) => {
         },
         onFailure: (err) => {
             console.log('Cognito Authentication Error: ', err);  // Log the actual error
+
             if (err.code === 'UserNotConfirmedException') {
                 req.flash('error_msg', 'Account not verified. Please check your email for the verification code.');
                 return res.redirect('/verify'); // Redirect to verify page
@@ -255,9 +267,19 @@ app.post('/login', (req, res) => {
                 req.flash('error_msg', `Authentication failed: ${err.message}`);
             }
             res.redirect('/login');
+        },
+        newPasswordRequired: (userAttributes, requiredAttributes) => {
+            // Cognito requires a new password
+            req.session.userAttributes = userAttributes;
+            req.session.requiredAttributes = requiredAttributes;
+            req.session.username = username;
+            req.session.password = password; // Save original password
+            req.flash('success_msg', 'You need to change your password.');
+            res.redirect('/change-password'); // Redirect to the password change page
         }
     });
 });
+
 
 // Logout route
 app.get('/logout', (req, res) => {
