@@ -91,7 +91,7 @@ function cognitoLogin(username, password, req, res) {
     });
 }
 app.get('/change-password', (req, res) => {
-    if (!req.session.username) {
+    if (!req.session.username || !req.session.cognitoSession) {
         req.flash('error_msg', 'Invalid session. Please log in again.');
         return res.redirect('/login');
     }
@@ -101,11 +101,17 @@ app.get('/change-password', (req, res) => {
 app.post('/change-password', (req, res) => {
     const { newPassword } = req.body;
 
+    if (!newPassword) {
+        req.flash('error_msg', 'New password is required.');
+        return res.redirect('/change-password');
+    }
+
     const cognitoUser = new CognitoUser({
         Username: req.session.username,
         Pool: userPool
     });
 
+    // Complete the new password challenge using the stored session
     cognitoUser.completeNewPasswordChallenge(newPassword, req.session.userAttributes, {
         onSuccess: (result) => {
             const idToken = result.getIdToken().getJwtToken();
@@ -117,8 +123,9 @@ app.post('/change-password', (req, res) => {
             req.flash('error_msg', `Password change failed: ${err.message}`);
             res.redirect('/change-password');
         }
-    });
+    }, req.session.cognitoSession);
 });
+
 
 
 // Handle new password submission
@@ -230,10 +237,8 @@ app.get('/login', (req, res) => {
     res.render('login');
 });
 
-// AWS Cognito Login handler
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
-    
     if (!username || !password) {
         req.flash('error_msg', 'Username and password are required.');
         return res.redirect('/login');
@@ -268,10 +273,11 @@ app.post('/login', (req, res) => {
             }
             res.redirect('/login');
         },
-        newPasswordRequired: (userAttributes, requiredAttributes) => {
+        newPasswordRequired: (userAttributes, requiredAttributes, session) => {
             // Cognito requires a new password
             req.session.userAttributes = userAttributes;
             req.session.requiredAttributes = requiredAttributes;
+            req.session.cognitoSession = session; // Store the session here
             req.session.username = username;
             req.session.password = password; // Save original password
             req.flash('success_msg', 'You need to change your password.');
@@ -279,7 +285,6 @@ app.post('/login', (req, res) => {
         }
     });
 });
-
 
 // Logout route
 app.get('/logout', (req, res) => {
