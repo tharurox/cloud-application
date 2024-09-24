@@ -13,8 +13,6 @@ const flash = require('connect-flash');
 const app = express();
 const port = 3000;
 const { spawn } = require('child_process');
-const fs = require('fs');
-const path = require('path');
 
 // AWS Cognito Pool Info
 const poolData = {
