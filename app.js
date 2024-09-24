@@ -174,7 +174,6 @@ app.get('/', isAuthenticated, (req, res) => {
 app.get('/register', (req, res) => {
     res.render('register');
 });
-
 // Handle user registration POST request
 app.post('/register', (req, res) => {
     const { username, password } = req.body;
@@ -187,7 +186,7 @@ app.post('/register', (req, res) => {
     const attributeList = [];
     const emailAttribute = new CognitoUserAttribute({
         Name: 'email',
-        Value: username,
+        Value: username, // Assuming username is the email
     });
     attributeList.push(emailAttribute);
 
@@ -197,12 +196,11 @@ app.post('/register', (req, res) => {
             return res.redirect('/register');
         }
 
-        // Store the username in the session and redirect to verify page
+        // Store the username in the session
         req.session.username = username;
-        res.redirect('/verify');
+        res.redirect('/verify'); // Redirect to verify page
     });
 });
-
 // Verification page
 app.get('/verify', (req, res) => {
     const username = req.session.username; // Retrieve the username from the session
@@ -212,7 +210,7 @@ app.get('/verify', (req, res) => {
         return res.redirect('/register');
     }
 
-    res.render('verify', { username });
+    res.render('verify', { username }); // Pass the username to the view
 });
 
 
@@ -268,11 +266,10 @@ app.post('/login', (req, res) => {
         }
     });
 });
-
 // Handle user verification
 app.post('/verify', (req, res) => {
     const { code } = req.body;
-    const username = req.session.username;
+    const username = req.session.username; // Retrieve username from session
 
     if (!username || !code) {
         req.flash('error_msg', 'Invalid verification details.');
@@ -294,7 +291,6 @@ app.post('/verify', (req, res) => {
         res.redirect('/login');
     });
 });
-
 
 
 // Logout route
