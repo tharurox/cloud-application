@@ -269,6 +269,33 @@ app.post('/login', (req, res) => {
     });
 });
 
+// Handle user verification
+app.post('/verify', (req, res) => {
+    const { code } = req.body;
+    const username = req.session.username;
+
+    if (!username || !code) {
+        req.flash('error_msg', 'Invalid verification details.');
+        return res.redirect('/verify');
+    }
+
+    const cognitoUser = new CognitoUser({
+        Username: username,
+        Pool: userPool
+    });
+
+    cognitoUser.confirmRegistration(code, true, (err, result) => {
+        if (err) {
+            req.flash('error_msg', `Verification failed: ${err.message}`);
+            return res.redirect('/verify');
+        }
+
+        req.flash('success_msg', 'Account verified successfully! Please log in.');
+        res.redirect('/login');
+    });
+});
+
+
 
 // Logout route
 app.get('/logout', (req, res) => {
