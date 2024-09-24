@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify Your Account</title>
+    <title>Verify Account</title>
 </head>
 <body>
     <div class="container">
-        <h1>Verify Your Account</h1>
-
         <% if (error_msg) { %>
             <div class="alert alert-danger"><%= error_msg %></div>
         <% } %>
@@ -21,8 +19,8 @@
 
         <form action="/verify" method="POST">
             <div>
-                <label for="verificationCode">Verification Code:</label>
-                <input type="text" id="verificationCode" name="verificationCode" required>
+                <label for="code">Verification Code:</label>
+                <input type="text" id="code" name="code" required>
             </div>
             <button type="submit">Verify</button>
         </form>

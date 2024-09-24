@@ -170,7 +170,6 @@ const upload = multer({ storage: storage });
 app.get('/', isAuthenticated, (req, res) => {
     res.render('index');
 });
-
 // Register page
 app.get('/register', (req, res) => {
     res.render('register');
@@ -180,63 +179,47 @@ app.get('/register', (req, res) => {
 app.post('/register', (req, res) => {
     const { username, password } = req.body;
 
-    // Validate form input
     if (!username || !password) {
         req.flash('error_msg', 'Username and password are required.');
         return res.redirect('/register');
     }
 
-    // Create CognitoUserAttributes
     const attributeList = [];
     const emailAttribute = new CognitoUserAttribute({
         Name: 'email',
-        Value: username, // Assuming username is the email, adjust if needed
+        Value: username,
     });
     attributeList.push(emailAttribute);
 
-    // Call AWS Cognito signUp method to register the user
     userPool.signUp(username, password, attributeList, null, (err, data) => {
         if (err) {
             req.flash('error_msg', `Error registering user: ${err.message}`);
             return res.redirect('/register');
         }
 
-        // Save username in session for verification step
+        // Store the username in the session and redirect to verify page
         req.session.username = username;
-        req.flash('success_msg', 'Registration successful! Please verify your account.');
-        
-        // Redirect to verify page after registration success
         res.redirect('/verify');
     });
 });
+
+// Verification page
 app.get('/verify', (req, res) => {
-    res.render('verify');
+    const username = req.session.username; // Retrieve the username from the session
+
+    if (!username) {
+        req.flash('error_msg', 'Username not found. Please register again.');
+        return res.redirect('/register');
+    }
+
+    res.render('verify', { username });
 });
 
-app.post('/verify', (req, res) => {
-    const { username, code } = req.body;
-
-    const cognitoUser = new CognitoUser({
-        Username: username,
-        Pool: userPool
-    });
-
-    cognitoUser.confirmRegistration(code, true, (err, result) => {
-        if (err) {
-            req.flash('error_msg', `Verification failed: ${err.message}`);
-            return res.redirect('/verify');
-        }
-
-        req.flash('success_msg', 'Account verified! You can now log in.');
-        res.redirect('/login');
-    });
-});
 
 // Login page
 app.get('/login', (req, res) => {
     res.render('login');
 });
-
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
@@ -285,6 +268,7 @@ app.post('/login', (req, res) => {
         }
     });
 });
+
 
 // Logout route
 app.get('/logout', (req, res) => {
