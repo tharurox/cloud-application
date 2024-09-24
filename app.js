@@ -12,6 +12,9 @@ const flash = require('connect-flash');
 
 const app = express();
 const port = 3000;
+const { spawn } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 // AWS Cognito Pool Info
 const poolData = {
@@ -346,7 +349,7 @@ app.post('/transcribe_url', isAuthenticated, async (req, res) => {
     console.log('Received text:', text);
 
     if (text) {
-        const command = 'transcribe-anything';
+        const command = 'transcribe-anything';  // Replace with your actual command
         const args = [text];
         const childProcess = spawn(command, args);
 
@@ -355,33 +358,37 @@ app.post('/transcribe_url', isAuthenticated, async (req, res) => {
         // Capture stdout
         childProcess.stdout.on('data', (data) => {
             console.log(`stdout: ${data}`);
-            output += data.toString();
+            output += data.toString();  // Append output data from the command
         });
 
-        // Capture stderr
+        // Capture stderr (for errors or warnings)
         childProcess.stderr.on('data', (data) => {
             console.error(`stderr: ${data}`);
-            output += `stderr: ${data.toString()}`;
+            output += `stderr: ${data.toString()}`;  // Append stderr data
         });
 
         // Handle process exit
         childProcess.on('close', (code) => {
             if (code === 0) {
+                // Command was successful, create a file for the output
                 const timestamp = Date.now();
                 const filename = `transcription_${timestamp}.txt`;
                 const filePath = path.join(__dirname, 'transcriptions', filename);
 
+                // Write the output to a file
                 fs.writeFileSync(filePath, output);
 
                 const userId = req.session.user.sub;
+                // Save the file information to the database
                 db.run(`INSERT INTO downloads (user_id, file_name, file_path, source_url) VALUES (?, ?, ?, ?)`,
-                    [userId, filename, filePath, text],
+                    [userId, filename, filePath, text],  // Save URL and transcription file details
                     (err) => {
                         if (err) {
                             console.error('Error saving file info to database:', err);
                         }
                     });
 
+                // Send the file as a download to the user
                 res.download(filePath, (err) => {
                     if (err) {
                         console.error('Error sending file:', err);
@@ -389,14 +396,17 @@ app.post('/transcribe_url', isAuthenticated, async (req, res) => {
                     }
                 });
             } else {
+                // Command failed, return an error
                 res.status(500).json({ output: `Process exited with code ${code}` });
             }
         });
 
+        // Handle process errors
         childProcess.on('error', (error) => {
             console.error(`child process error: ${error}`);
             res.status(500).json({ output: `Error processing the transcription: ${error.message}` });
         });
+
     } else {
         res.status(400).json({ output: 'No text provided.' });
     }
