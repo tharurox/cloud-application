@@ -41,11 +41,11 @@ pool.query(`DROP TABLE IF EXISTS users`, (err) => {
 
 // Create the users table
 pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      username VARCHAR(255) UNIQUE NOT NULL,
-      password VARCHAR(255) NOT NULL
-    )
+    CREATE TABLE users (
+    id VARCHAR(36) PRIMARY KEY,  -- Store Cognito userSub (UUID)
+    username VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL
+)
   `, (err) => {
     if (err) {
       console.error('Error creating users table:', err);

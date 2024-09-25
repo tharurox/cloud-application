@@ -168,10 +168,29 @@ app.post('/register', (req, res) => {
             req.flash('error_msg', `Error registering user: ${err.message}`);
             return res.redirect('/register');
         }
-        req.session.username = username;
-        res.redirect('/verify');
+
+        // Cognito user registration successful, get the user ID
+        const cognitoUserId = data.userSub;  // Cognito User ID (UUID)
+
+        // Insert the user into MySQL database
+        db.query(
+            `INSERT INTO users (id, username) VALUES (?, ?)`,
+            [cognitoUserId, username],
+            (dbErr) => {
+                if (dbErr) {
+                    console.error('Error saving user to MySQL:', dbErr);
+                    req.flash('error_msg', 'Registration successful in Cognito but failed in MySQL.');
+                    return res.redirect('/register');
+                }
+
+                // Successfully saved user in MySQL, proceed to verify
+                req.session.username = username;
+                res.redirect('/verify');
+            }
+        );
     });
 });
+
 
 // Verification page
 app.get('/verify', (req, res) => {
