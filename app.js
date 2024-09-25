@@ -30,8 +30,8 @@ const { v4: uuidv4 } = require('uuid'); // For unique file names
 
 // Set up S3 with your credentials and region
 const s3 = new AWS.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || 'ASIA5DYSEEJ4U77K5RMK', // Use your AWS access key here
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || 'Xqvh9gKw0ckcDr4nWl52ODIF2mrVk9vKV9JFBkFD', // Use your AWS secret key here
+    accessKeyId: 'ASIA5DYSEEJ45XQNPEI4', // Use your AWS access key here
+    secretAccessKey: 'vlqiaLPOLeMVScFQGn98mIDSu7ZnJNph1hnDdBbf', // Use your AWS secret key here
     region: 'ap-southeast-2' // The region where your bucket is located
 });
 
