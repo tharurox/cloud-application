@@ -26,6 +26,16 @@ AWS.config.update({
     region: 'ap-southeast-2'
 });
 
+const AWS = require('aws-sdk');
+const { v4: uuidv4 } = require('uuid'); // For unique file names
+
+// Set up S3 with your credentials and region
+const s3 = new AWS.S3({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || 'ASIA5DYSEEJ4U77K5RMK', // Use your AWS access key here
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || 'Xqvh9gKw0ckcDr4nWl52ODIF2mrVk9vKV9JFBkFD', // Use your AWS secret key here
+    region: 'ap-southeast-2' // The region where your bucket is located
+});
+
 const ASSEMBLYAI_API_KEY = 'f6ac0ab5e04141dca16baf2571bc8c5a'; // Replace with your AssemblyAI API key
 
 // Set EJS as the template engine
@@ -258,32 +268,46 @@ app.get('/logout', (req, res) => {
     });
 });
 
+
 // Handle file upload and transcription
 app.post('/upload', upload.single('video'), async (req, res) => {
     const videoPath = req.file.path;
     const audioPath = `uploads/${Date.now()}.mp3`;
     const transcriptionPath = `transcriptions/${Date.now()}.txt`;
+    const bucketName = 'n11849622-assignment-2'; // Replace with your bucket name
 
     ffmpeg(videoPath)
         .output(audioPath)
         .on('end', async () => {
             try {
                 const transcriptionText = await transcribeAudioWithAssemblyAI(audioPath);
-                fs.writeFileSync(transcriptionPath, transcriptionText);
 
+                // Upload transcription to S3
+                const uploadParams = {
+                    Bucket: bucketName,
+                    Key: `transcriptions/${uuidv4()}.txt`, // Use a unique name for each file
+                    Body: transcriptionText,
+                    ContentType: 'text/plain'
+                };
+
+                const s3Response = await s3.upload(uploadParams).promise();
+
+                // Store the S3 file URL in the database
                 const userId = req.session.user.sub;
+                const fileUrl = s3Response.Location; // The URL of the uploaded file
+
                 db.query(`INSERT INTO downloads (user_id, file_name, file_path) VALUES (?, ?, ?)`,
-                    [userId, path.basename(transcriptionPath), transcriptionPath],
+                    [userId, path.basename(fileUrl), fileUrl],
                     (err) => {
                         if (err) {
                             console.error('Error saving file info to database:', err);
                         }
                     });
 
-                res.render('progress', { transcriptionPath });
+                res.render('progress', { fileUrl });
             } catch (error) {
-                console.error('Transcription error:', error);
-                res.status(500).send('Transcription failed');
+                console.error('Transcription or upload error:', error);
+                res.status(500).send('Transcription or S3 upload failed');
             }
         })
         .on('progress', (progress) => {
