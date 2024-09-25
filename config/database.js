@@ -22,23 +22,6 @@ pool.getConnection((err, connection) => {
   }
 });
 
-// Drop existing tables if they exist
-pool.query(`DROP TABLE IF EXISTS downloads`, (err) => {
-  if (err) {
-    console.error('Error dropping downloads table:', err);
-  } else {
-    console.log('downloads table dropped.');
-  }
-});
-
-pool.query(`DROP TABLE IF EXISTS users`, (err) => {
-  if (err) {
-    console.error('Error dropping users table:', err);
-  } else {
-    console.log('users table dropped.');
-  }
-});
-
 // Create the users table
 pool.query(`
     CREATE TABLE users (
