@@ -52,14 +52,14 @@ pool.query(`DROP TABLE IF EXISTS downloads`, (err) => {
             // Create the downloads table after users table is created
             pool.query(`
               CREATE TABLE IF NOT EXISTS downloads (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id VARCHAR(36),
-                file_name VARCHAR(255),
-                file_path VARCHAR(255),
-                source_url VARCHAR(255),
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
-              )
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              user_id VARCHAR(36),  -- Match user_id datatype with users.id (UUID from Cognito)
+              file_name VARCHAR(255),
+              file_path VARCHAR(255),
+              source_url VARCHAR(255),
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+            )
             `, (err) => {
               if (err) {
                 console.error('Error creating downloads table:', err);
