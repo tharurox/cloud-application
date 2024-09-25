@@ -266,7 +266,6 @@ app.get('/logout', (req, res) => {
         res.redirect('/login');
     });
 });
-
 app.post('/upload', upload.single('video'), async (req, res) => {
     console.log('File upload details:', req.file); // Log the file info
 
@@ -274,25 +273,29 @@ app.post('/upload', upload.single('video'), async (req, res) => {
         return res.status(400).send('No file uploaded');
     }
 
-    const videoPath = req.file.path; // This should give you the correct file path in the /uploads folder
+    const videoPath = req.file.path; // Local file path
     const bucketName = 'n11849622-assignment-2'; // Your S3 bucket name
     const videoFileName = path.basename(videoPath); // Extract the file name
     const s3VideoKey = `videos/${uuidv4()}-${videoFileName}`; // Unique file name for S3
 
     console.log('Uploaded video path (local):', videoPath);
 
-    // Upload the video file to S3
-    const videoUploadParams = {
+    // Generate a presigned URL for the video upload
+    const presignedVideoUrl = s3.getSignedUrl('putObject', {
         Bucket: bucketName,
-        Key: s3VideoKey, // Unique file name for the S3 bucket
-        Body: fs.createReadStream(videoPath),
+        Key: s3VideoKey,
+        Expires: 60 * 5, // 5 minutes expiration time
         ContentType: req.file.mimetype, // Ensure correct MIME type
-    };
+    });
 
     try {
-        const s3VideoResponse = await s3.upload(videoUploadParams).promise();
-        const s3VideoUrl = s3VideoResponse.Location; // The URL of the uploaded file in S3
-        console.log('Video file uploaded to S3:', s3VideoUrl);
+        // Upload the video file to S3 using the presigned URL
+        const videoUploadResponse = await axios.put(presignedVideoUrl, fs.createReadStream(videoPath), {
+            headers: {
+                'Content-Type': req.file.mimetype,
+            },
+        });
+        console.log('Video file uploaded to S3:', videoUploadResponse.status);
 
         // Now, process the file with ffmpeg and transcribe
         const audioPath = `uploads/${Date.now()}.mp3`;
@@ -304,24 +307,29 @@ app.post('/upload', upload.single('video'), async (req, res) => {
                 try {
                     const transcriptionText = await transcribeAudioWithAssemblyAI(audioPath);
 
-                    // Upload transcription to S3
+                    // Generate a presigned URL for the transcription upload
                     const transcriptionKey = `transcriptions/${uuidv4()}.txt`; // Unique file name for each transcription
-                    const uploadParams = {
+                    const presignedTranscriptionUrl = s3.getSignedUrl('putObject', {
                         Bucket: bucketName,
                         Key: transcriptionKey,
-                        Body: transcriptionText,
+                        Expires: 60 * 5, // 5 minutes expiration time
                         ContentType: 'text/plain',
-                    };
+                    });
 
-                    const s3TranscriptionResponse = await s3.upload(uploadParams).promise();
-                    const transcriptionUrl = s3TranscriptionResponse.Location;
-                    console.log('Transcription file uploaded to S3:', transcriptionUrl);
+                    // Upload transcription to S3 using presigned URL
+                    const transcriptionUploadResponse = await axios.put(presignedTranscriptionUrl, transcriptionText, {
+                        headers: {
+                            'Content-Type': 'text/plain',
+                        },
+                    });
+
+                    console.log('Transcription file uploaded to S3:', transcriptionUploadResponse.status);
 
                     // Store file info in the database
                     const userId = req.session.user.sub;
                     db.query(
                         `INSERT INTO downloads (user_id, file_name, file_path, source_url) VALUES (?, ?, ?, ?)`,
-                        [userId, path.basename(transcriptionUrl), transcriptionUrl, s3VideoUrl],
+                        [userId, transcriptionKey, transcriptionKey, s3VideoKey],
                         (err) => {
                             if (err) {
                                 console.error('Error saving file info to database:', err);
@@ -330,7 +338,7 @@ app.post('/upload', upload.single('video'), async (req, res) => {
                     );
 
                     // Render the progress page
-                    res.render('progress', { transcriptionUrl, s3VideoUrl });
+                    res.render('progress', { transcriptionUrl: presignedTranscriptionUrl, s3VideoUrl: presignedVideoUrl });
                 } catch (error) {
                     console.error('Transcription or upload error:', error);
                     res.status(500).send('Transcription or S3 upload failed');
