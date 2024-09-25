@@ -268,11 +268,17 @@ app.get('/logout', (req, res) => {
 });
 
 
-// Handle file upload and transcription
 app.post('/upload', upload.single('video'), async (req, res) => {
-    const videoPath = req.file.path; // This should be the path of the uploaded video
+    console.log('File upload details:', req.file); // Log the file info
+
+    if (!req.file) {
+        return res.status(400).send('No file uploaded');
+    }
+
+    const videoPath = req.file.path; // This should give you the correct file path
     console.log('Uploaded video path:', videoPath);
 
+    // Process the file with ffmpeg, transcribe, etc.
     const audioPath = `uploads/${Date.now()}.mp3`;
     const transcriptionPath = `transcriptions/${Date.now()}.txt`;
     const bucketName = 'n11849622-assignment-2'; // Your bucket name
@@ -286,17 +292,18 @@ app.post('/upload', upload.single('video'), async (req, res) => {
                 // Upload transcription to S3
                 const uploadParams = {
                     Bucket: bucketName,
-                    Key: `transcriptions/${uuidv4()}.txt`,
+                    Key: `transcriptions/${uuidv4()}.txt`, // Use a unique name for each file
                     Body: transcriptionText,
-                    ContentType: 'text/plain'
+                    ContentType: 'text/plain',
                 };
 
                 const s3Response = await s3.upload(uploadParams).promise();
 
-                // Store the S3 file URL in the database
-                const userId = req.session.user.sub;
                 const fileUrl = s3Response.Location;
+                console.log('File uploaded to S3:', fileUrl);
 
+                // Store file info in the database
+                const userId = req.session.user.sub;
                 db.query(`INSERT INTO downloads (user_id, file_name, file_path) VALUES (?, ?, ?)`,
                     [userId, path.basename(fileUrl), fileUrl],
                     (err) => {
@@ -316,6 +323,7 @@ app.post('/upload', upload.single('video'), async (req, res) => {
         })
         .run();
 });
+
 
 // Handle transcription from URL
 app.post('/transcribe_url', isAuthenticated, async (req, res) => {
