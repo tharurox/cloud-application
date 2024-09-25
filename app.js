@@ -32,7 +32,8 @@ const { v4: uuidv4 } = require('uuid'); // For unique file names
 const s3 = new AWS.S3({
     accessKeyId: 'ASIA5DYSEEJ45XQNPEI4', // Use your AWS access key here
     secretAccessKey: 'vlqiaLPOLeMVScFQGn98mIDSu7ZnJNph1hnDdBbf', // Use your AWS secret key here
-    region: 'ap-southeast-2' // The region where your bucket is located
+    region: 'ap-southeast-2', // The region where your bucket is located
+    aws_session_token : 'IQoJb3JpZ2luX2VjELb//////////wEaDmFwLXNvdXRoZWFzdC0yIkcwRQIgbVIxQ5FOO5o5cEIzTVye998ecVFCKIIImAKayfZQEHECIQDJhQy4sz2QekTMteHOidcAahfoDU1eZKdc8mXxP5RVZyquAwjv//////////8BEAMaDDkwMTQ0NDI4MDk1MyIM8P6S8ORSELqxf0fYKoIDqtFLPf6rmeUXHpwhcV8matCIB987gTTYOAyipHtklNlzbYImgzEIJyss5DiYGf5PiMAmeSxg7fCbpI/mdMPyoWcpYSpp+slDcxtTZW7rD35MFmVjE68V3LfvjG9kYMkv4BcJCA9jm73bhbf1Qh3/GWrInkwn+PtBAbNg5U50tUaZc0OOTfvixmRUZ6m0hFFIdamDLUW7/lFouSED3qcY2Ta4eGzFWvHupoIQK+5pn80dAmUsYfAskzdpe/CJONkdIjDq5kBHHVeWCqk0XHL+vaYiFr1hVAxDH93YHkqcIzVsXE1eHaNqR6l/PUyb6g6qR90gDDuF8pX2fyzBs/vFfCBUGevWCHCgjE5vg8TkFzSg74qB0qa+FP2gNwvI/YQSqkcTQACTkgHTtBTtYOeJ9wVNB5BIEy1dtQQjYWQBvo1QMMvl3+hgarTHAWXntalepAILl/3pKFlU6X81LQhZVssxSCHNJB8CzU3dJ9h8iXmamPzWl29n2WR8bDxeb6RYHcQwnJ/QtwY6pgHJth7FfrwA1a77CelEl+eNQra7lblMv4pqa2xLk5rjYh5fEphPHTC74JWjlip0B76RdPDgl9awZWjjSQzTm9zvQPcSTg8jyNpvz95BtCN/0KNJkF5WJXG7Vg6Udc+M6X0MQ+Qt5Sw6MTZeHbKVMsPzKepNY1uUzJ0gUaPcU/udQ1LL8YN+V5QIHF1RuyChGXUhKYUUEld7tYQEmjAP+Zvnq1gxpk/g'
 });
 
 const ASSEMBLYAI_API_KEY = 'f6ac0ab5e04141dca16baf2571bc8c5a'; // Replace with your AssemblyAI API key
