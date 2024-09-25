@@ -267,7 +267,6 @@ app.get('/logout', (req, res) => {
     });
 });
 
-
 app.post('/upload', upload.single('video'), async (req, res) => {
     console.log('File upload details:', req.file); // Log the file info
 
@@ -275,53 +274,76 @@ app.post('/upload', upload.single('video'), async (req, res) => {
         return res.status(400).send('No file uploaded');
     }
 
-    const videoPath = req.file.path; // This should give you the correct file path
-    console.log('Uploaded video path:', videoPath);
+    const videoPath = req.file.path; // This should give you the correct file path in the /uploads folder
+    const bucketName = 'n11849622-assignment-2'; // Your S3 bucket name
+    const videoFileName = path.basename(videoPath); // Extract the file name
+    const s3VideoKey = `videos/${uuidv4()}-${videoFileName}`; // Unique file name for S3
 
-    // Process the file with ffmpeg, transcribe, etc.
-    const audioPath = `uploads/${Date.now()}.mp3`;
-    const transcriptionPath = `transcriptions/${Date.now()}.txt`;
-    const bucketName = 'n11849622-assignment-2'; // Your bucket name
+    console.log('Uploaded video path (local):', videoPath);
 
-    ffmpeg(videoPath)
-        .output(audioPath)
-        .on('end', async () => {
-            try {
-                const transcriptionText = await transcribeAudioWithAssemblyAI(audioPath);
+    // Upload the video file to S3
+    const videoUploadParams = {
+        Bucket: bucketName,
+        Key: s3VideoKey, // Unique file name for the S3 bucket
+        Body: fs.createReadStream(videoPath),
+        ContentType: req.file.mimetype, // Ensure correct MIME type
+    };
 
-                // Upload transcription to S3
-                const uploadParams = {
-                    Bucket: bucketName,
-                    Key: `transcriptions/${uuidv4()}.txt`, // Use a unique name for each file
-                    Body: transcriptionText,
-                    ContentType: 'text/plain',
-                };
+    try {
+        const s3VideoResponse = await s3.upload(videoUploadParams).promise();
+        const s3VideoUrl = s3VideoResponse.Location; // The URL of the uploaded file in S3
+        console.log('Video file uploaded to S3:', s3VideoUrl);
 
-                const s3Response = await s3.upload(uploadParams).promise();
+        // Now, process the file with ffmpeg and transcribe
+        const audioPath = `uploads/${Date.now()}.mp3`;
+        const transcriptionPath = `transcriptions/${Date.now()}.txt`;
 
-                const fileUrl = s3Response.Location;
-                console.log('File uploaded to S3:', fileUrl);
+        ffmpeg(videoPath)
+            .output(audioPath)
+            .on('end', async () => {
+                try {
+                    const transcriptionText = await transcribeAudioWithAssemblyAI(audioPath);
 
-                // Store file info in the database
-                const userId = req.session.user.sub;
-                db.query(`INSERT INTO downloads (user_id, file_name, file_path) VALUES (?, ?, ?)`,
-                    [userId, path.basename(fileUrl), fileUrl],
-                    (err) => {
-                        if (err) {
-                            console.error('Error saving file info to database:', err);
+                    // Upload transcription to S3
+                    const transcriptionKey = `transcriptions/${uuidv4()}.txt`; // Unique file name for each transcription
+                    const uploadParams = {
+                        Bucket: bucketName,
+                        Key: transcriptionKey,
+                        Body: transcriptionText,
+                        ContentType: 'text/plain',
+                    };
+
+                    const s3TranscriptionResponse = await s3.upload(uploadParams).promise();
+                    const transcriptionUrl = s3TranscriptionResponse.Location;
+                    console.log('Transcription file uploaded to S3:', transcriptionUrl);
+
+                    // Store file info in the database
+                    const userId = req.session.user.sub;
+                    db.query(
+                        `INSERT INTO downloads (user_id, file_name, file_path, source_url) VALUES (?, ?, ?, ?)`,
+                        [userId, path.basename(transcriptionUrl), transcriptionUrl, s3VideoUrl],
+                        (err) => {
+                            if (err) {
+                                console.error('Error saving file info to database:', err);
+                            }
                         }
-                    });
+                    );
 
-                res.render('progress', { fileUrl });
-            } catch (error) {
-                console.error('Transcription or upload error:', error);
-                res.status(500).send('Transcription or S3 upload failed');
-            }
-        })
-        .on('progress', (progress) => {
-            console.log(`Processing: ${progress.percent}% done`);
-        })
-        .run();
+                    // Render the progress page
+                    res.render('progress', { transcriptionUrl, s3VideoUrl });
+                } catch (error) {
+                    console.error('Transcription or upload error:', error);
+                    res.status(500).send('Transcription or S3 upload failed');
+                }
+            })
+            .on('progress', (progress) => {
+                console.log(`Processing: ${progress.percent}% done`);
+            })
+            .run();
+    } catch (error) {
+        console.error('Error uploading video to S3:', error);
+        res.status(500).send('Error uploading video to S3');
+    }
 });
 
 
