@@ -350,7 +350,9 @@ app.get('/download/:filename', (req, res) => {
 
 // Display download history
 app.get('/history', isAuthenticated, (req, res) => {
-    const userId = req.session.user.sub;
+    //const userId = req.session.user.sub;
+    const userId = '1';
+
     db.query(`SELECT * FROM downloads WHERE user_id = ? ORDER BY created_at DESC`, [userId], (err, rows) => {
         if (err) {
             return res.status(500).send('Error fetching download history');
