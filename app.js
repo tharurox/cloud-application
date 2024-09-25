@@ -26,7 +26,6 @@ AWS.config.update({
     region: 'ap-southeast-2'
 });
 
-const AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid'); // For unique file names
 
 // Set up S3 with your credentials and region
