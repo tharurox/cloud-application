@@ -270,10 +270,12 @@ app.get('/logout', (req, res) => {
 
 // Handle file upload and transcription
 app.post('/upload', upload.single('video'), async (req, res) => {
-    const videoPath = req.file.path;
+    const videoPath = req.file.path; // This should be the path of the uploaded video
+    console.log('Uploaded video path:', videoPath);
+
     const audioPath = `uploads/${Date.now()}.mp3`;
     const transcriptionPath = `transcriptions/${Date.now()}.txt`;
-    const bucketName = 'n11849622-assignment-2'; // Replace with your bucket name
+    const bucketName = 'n11849622-assignment-2'; // Your bucket name
 
     ffmpeg(videoPath)
         .output(audioPath)
@@ -284,7 +286,7 @@ app.post('/upload', upload.single('video'), async (req, res) => {
                 // Upload transcription to S3
                 const uploadParams = {
                     Bucket: bucketName,
-                    Key: `transcriptions/${uuidv4()}.txt`, // Use a unique name for each file
+                    Key: `transcriptions/${uuidv4()}.txt`,
                     Body: transcriptionText,
                     ContentType: 'text/plain'
                 };
@@ -293,7 +295,7 @@ app.post('/upload', upload.single('video'), async (req, res) => {
 
                 // Store the S3 file URL in the database
                 const userId = req.session.user.sub;
-                const fileUrl = s3Response.Location; // The URL of the uploaded file
+                const fileUrl = s3Response.Location;
 
                 db.query(`INSERT INTO downloads (user_id, file_name, file_path) VALUES (?, ?, ?)`,
                     [userId, path.basename(fileUrl), fileUrl],
