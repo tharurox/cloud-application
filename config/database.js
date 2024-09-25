@@ -22,38 +22,56 @@ pool.getConnection((err, connection) => {
   }
 });
 
+// Drop existing downloads table if it exists
+pool.query(`DROP TABLE IF EXISTS downloads`, (err) => {
+  if (err) {
+    console.error('Error dropping downloads table:', err);
+  } else {
+    console.log('downloads table dropped.');
+  }
+});
+
+// Drop existing users table if it exists
+pool.query(`DROP TABLE IF EXISTS users`, (err) => {
+  if (err) {
+    console.error('Error dropping users table:', err);
+  } else {
+    console.log('users table dropped.');
+  }
+});
+
 // Create the users table
 pool.query(`
-    CREATE TABLE users (
+  CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(36) PRIMARY KEY,  -- Store Cognito userSub (UUID)
     username VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL
-)
-  `, (err) => {
-    if (err) {
-      console.error('Error creating users table:', err);
-    } else {
-      console.log('users table created.');
-    }
-  });
+  )
+`, (err) => {
+  if (err) {
+    console.error('Error creating users table:', err);
+  } else {
+    console.log('users table created.');
+  }
+});
 
-// Create the downloads table
+// Create the downloads table with foreign key referencing the users table
 pool.query(`
-    CREATE TABLE IF NOT EXISTS downloads (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      user_id INT,
-      file_name VARCHAR(255),
-      file_path VARCHAR(255),
-      source_url VARCHAR(255),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
-    )
-  `, (err) => {
-    if (err) {
-      console.error('Error creating downloads table:', err);
-    } else {
-      console.log('downloads table created.');
-    }
-  });
+  CREATE TABLE IF NOT EXISTS downloads (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(36),  -- Match user_id datatype with users.id (UUID from Cognito)
+    file_name VARCHAR(255),
+    file_path VARCHAR(255),
+    source_url VARCHAR(255),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+  )
+`, (err) => {
+  if (err) {
+    console.error('Error creating downloads table:', err);
+  } else {
+    console.log('downloads table created.');
+  }
+});
 
 module.exports = pool;
