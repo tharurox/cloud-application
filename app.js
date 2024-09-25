@@ -229,10 +229,16 @@ app.post('/verify', (req, res) => {
 app.get('/login', (req, res) => {
     res.render('login');
 });
-
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
 
+    // Temporary hard-coded admin login
+    if (username === 'admin' && password === 'admin') {
+        req.session.user = { username: 'admin', role: 'admin' }; // You can store other info if needed
+        return res.redirect('/');
+    }
+
+    // If not hardcoded admin login, continue with Cognito login
     if (!username || !password) {
         req.flash('error_msg', 'Username and password are required.');
         return res.redirect('/login');
