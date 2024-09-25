@@ -1,14 +1,10 @@
 const mysql = require('mysql2');
 const AWS = require('aws-sdk');
 require('dotenv').config();
-
+AWS.config.update({region:'ap-southeast-2'});
 // Initialize AWS SSM (Parameter Store) and Secrets Manager clients
 const ssm = new AWS.SSM();
 const secretsManager = new AWS.SecretsManager();
-
-AWS.config.update({
-  region: 'ap-southeast-2' // Replace with your region if different
-});
 
 // Function to retrieve a parameter from Parameter Store
 async function getParameter(parameterName) {
