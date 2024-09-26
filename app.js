@@ -39,15 +39,6 @@ app.use((req, res, next) => {
     next();
 });
 
-
-// Session middleware for production (with HTTPS)
-app.use(session({
-    secret: 'your-secret-key',
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
-}));
-
 passport.use(new GoogleStrategy({
     clientID: 'YOUR_GOOGLE_CLIENT_ID',
     clientSecret: 'YOUR_GOOGLE_CLIENT_SECRET',
