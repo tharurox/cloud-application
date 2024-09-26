@@ -358,7 +358,11 @@ app.post('/upload', upload.single('video'), async (req, res) => {
                     );
 
                     // Render the progress page
-                    res.render('progress', { transcriptionUrl: presignedTranscriptionUrl, s3VideoUrl: presignedVideoUrl });
+                    res.render('progress', { 
+                        transcriptionUrl: presignedTranscriptionUrl, 
+                        transcriptionPath: transcriptionKey, // Pass the transcriptionKey as transcriptionPath
+                        s3VideoUrl: presignedVideoUrl 
+                    });
                 } catch (error) {
                     console.error('Transcription or upload error:', error);
                     res.status(500).send('Transcription or S3 upload failed');
