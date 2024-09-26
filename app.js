@@ -33,7 +33,6 @@ const s3 = new AWS.S3({
     accessKeyId: 'ASIA5DYSEEJ47L6A6CQI', // Use your AWS access key here
     secretAccessKey: '+kOBrR9VuucBIkr0XG4yH0NFyPrxrmK4MgkC0chH', // Use your AWS secret key here
     region: 'ap-southeast-2', // The region where your bucket is located
-    secretAccessKey  : 'IQoJb3JpZ2luX2VjEML//////////wEaDmFwLXNvdXRoZWFzdC0yIkcwRQIhAPCgmwFoDswUkbWpn2htBtiLTTB1PLzNWH3fTVLkJ6bbAiAfXAgehZUCzJuB9BkfJNjvvBmowHud9cxNUpc8j8wNriquAwj7//////////8BEAMaDDkwMTQ0NDI4MDk1MyIM1kLCSSXc1dqQT+kYKoID3bRoiEyp05phpNTjeURQD0v6YtCy+Im+CF9G3k9PggiK0v7at6SQSQ8+MtsyvjWJht+SOdq/DIxsl6QXmHdVUbxavGbauO9OYCOijw/HosHsGl7qXKlXaFhU5ch84zZADZRWAtJuI/dmhOlw0qQvt/nXqweW8jzBf5BmSeW/Ebjz2cr30xCrToriQkh4Z62t3xVbn/taFeygOMsPQAhRRnvnXz1H3WqwMeBKxzEYOTqBYQwqQcJ1rl7qvRPjEDoerZ2xLxFDG7BuLlILFEWsPe7VDjPlZmT981h5F53fbacq9mcLSfnAb/sx0WwPrn0PS60OB11Kay/ROzPXonzWWuI1o1DejCbLTqKRgsY6Di83TRxQ/W5EnWo2pIyOKq/yl9MyqiWRVPms+/cCKo+YnOr79eOC8N4M7V+Mp96OAvZgvq195wyriV/tggPNmHY1PqFhZrrfzNJVZTE2I5eBRQNtViMtsjCy5k95JliRGuNgpJLLhfKNNJa0vX2HoLBau9Mw8YXTtwY6pgEkq/aLn0IpMKz64HTDZDCCu4uZPC+zZ+0RXvSCzp+dSmB92qwV5zgdmNx+DAfTYT1kpCVhau86ZkDKwSDgMsHK//vthTBD2mIQhUc8gGsJHJ+8ZowyE89U4hHnddJoJ3EpsBNaHfGZpPV0jGHQEBTCG/Uw4KofO3vYfKFfP0dFiEy3b/4IbHQNmFHmEfbyVgwCZh/QPA/z/MflR+TtRx+1I3kAABSa'
 });
 
 const ASSEMBLYAI_API_KEY = 'f6ac0ab5e04141dca16baf2571bc8c5a'; // Replace with your AssemblyAI API key
