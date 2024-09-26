@@ -13,7 +13,62 @@ const { spawn } = require('child_process');
 const db = require('./config/database'); // Using MySQL from config/database.js
 const dbPromise = require('./config/database'); // Ensure db is returned as a Promise
 const app = express();
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+
 const port = 3000;
+
+passport.use(new GoogleStrategy({
+    clientID: 'YOUR_GOOGLE_CLIENT_ID',
+    clientSecret: 'YOUR_GOOGLE_CLIENT_SECRET',
+    callbackURL: '/auth/google/callback'
+}, (token, tokenSecret, profile, done) => {
+    // Here you can link the Google profile to a user in your database
+    done(null, profile);
+}));
+
+passport.serializeUser((user, done) => {
+    done(null, user);
+});
+
+passport.deserializeUser((obj, done) => {
+    done(null, obj);
+});
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+
+passport.use(new GoogleStrategy({
+    clientID: 'YOUR_GOOGLE_CLIENT_ID',
+    clientSecret: 'YOUR_GOOGLE_CLIENT_SECRET',
+    callbackURL: '/auth/google/callback'
+}, (token, tokenSecret, profile, done) => {
+    // Here you can link the Google profile to a user in your database
+    done(null, profile);
+}));
+
+passport.serializeUser((user, done) => {
+    done(null, user);
+});
+
+passport.deserializeUser((obj, done) => {
+    done(null, obj);
+});
+
+function isLoggedIn(req, res, next) {
+    if (req.isAuthenticated()) {
+        return next();
+    }
+    res.redirect('/login');
+}
+
+app.get('/', isLoggedIn, (req, res) => {
+    res.render('index', { user: req.user });
+});
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 // AWS Cognito Pool Info
 const poolData = {
@@ -25,6 +80,28 @@ const userPool = new CognitoUserPool(poolData);
 AWS.config.update({
     region: 'ap-southeast-2'
 });
+
+
+passport.use(new GoogleStrategy({
+    clientID: 'YOUR_GOOGLE_CLIENT_ID',
+    clientSecret: 'YOUR_GOOGLE_CLIENT_SECRET',
+    callbackURL: '/auth/google/callback'
+}, (token, tokenSecret, profile, done) => {
+    // Here you can link the Google profile to a user in your database
+    done(null, profile);
+}));
+
+passport.serializeUser((user, done) => {
+    done(null, user);
+});
+
+passport.deserializeUser((obj, done) => {
+    done(null, obj);
+});
+
+app.use(passport.initialize());
+app.use(passport.session());
+
 
 const { v4: uuidv4 } = require('uuid'); // For unique file names
 
@@ -265,6 +342,41 @@ app.post('/login', (req, res) => {
 
     cognitoLogin(username, password, req, res);
 });
+
+const cognitoIdentity = new AWS.CognitoIdentity();
+
+app.get('/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/login' }),
+    (req, res) => {
+        const googleIdToken = req.user.idToken;
+
+        const params = {
+            IdentityPoolId: 'YOUR_COGNITO_IDENTITY_POOL_ID',
+            Logins: {
+                'accounts.google.com': googleIdToken
+            }
+        };
+
+        cognitoIdentity.getId(params, (err, data) => {
+            if (err) {
+                console.error(err);
+                return res.redirect('/login');
+            }
+
+            cognitoIdentity.getCredentialsForIdentity({
+                IdentityId: data.IdentityId,
+                Logins: params.Logins
+            }, (err, credentials) => {
+                if (err) {
+                    console.error(err);
+                    return res.redirect('/login');
+                }
+
+                req.session.credentials = credentials;
+                res.redirect('/');
+            });
+        });
+    });
 
 // Logout route
 app.get('/logout', (req, res) => {
