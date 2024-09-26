@@ -9,7 +9,6 @@ const { CognitoUserPool, CognitoUserAttribute, CognitoUser, AuthenticationDetail
 const AWS = require('aws-sdk');
 const jwt = require('jsonwebtoken');
 const flash = require('connect-flash');
-const dbPromise = require('./config/database'); // dbPromise is now a promise
 const { spawn } = require('child_process');
 const db = require('./config/database'); // Using MySQL from config/database.js
 const dbPromise = require('./config/database'); // Ensure db is returned as a Promise
