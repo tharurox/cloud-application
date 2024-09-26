@@ -12,7 +12,6 @@ const flash = require('connect-flash');
 const dbPromise = require('./config/database'); // dbPromise is now a promise
 const { spawn } = require('child_process');
 const db = require('./config/database'); // Using MySQL from config/database.js
-const axios = require('axios');
 
 const app = express();
 const port = 3000;
