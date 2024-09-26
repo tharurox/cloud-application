@@ -429,9 +429,31 @@ app.post('/transcribe_url', isAuthenticated, async (req, res) => {
 });
 
 // Download transcription
-app.get('/download/:filename', (req, res) => {
-    const filePath = path.join(__dirname, 'transcriptions', req.params.filename);
-    res.download(filePath);
+app.get('/download/:filename', async (req, res) => {
+    const fileName = req.params.filename; // File name passed in the URL
+    const bucketName = 'n11849622-assignment-2'; // Your S3 bucket name
+    const s3FileKey = `transcriptions/${fileName}`; // The file path in S3
+
+    try {
+        // Get the file from S3
+        const s3Params = {
+            Bucket: bucketName,
+            Key: s3FileKey, // The path to the file in the S3 bucket
+        };
+
+        // Fetch the file from S3 using getObject
+        const s3Response = await s3.getObject(s3Params).promise();
+
+        // Set the correct headers for downloading the file
+        res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+        res.setHeader('Content-Type', 'text/plain');
+
+        // Send the file data to the response
+        res.send(s3Response.Body);
+    } catch (error) {
+        console.error('Error downloading file from S3:', error);
+        res.status(500).send('Error downloading the file');
+    }
 });
 
 // Display download history
