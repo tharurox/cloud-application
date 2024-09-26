@@ -15,8 +15,38 @@ const dbPromise = require('./config/database'); // Ensure db is returned as a Pr
 const app = express();
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const session = require('express-session');
+const flash = require('connect-flash');
 
 const port = 3000;
+
+// Set up session management
+app.use(session({
+    secret: 'your-secret-key', // Replace with your own secret key
+    resave: false, // Don't save the session if it's not modified
+    saveUninitialized: false, // Don't create session until something is stored
+    cookie: { secure: false } // Set secure to true if using HTTPS
+}));
+
+// Set up flash middleware for flash messages
+app.use(flash());
+
+// Middleware to set flash messages as locals for access in templates
+app.use((req, res, next) => {
+    res.locals.success_msg = req.flash('success_msg');
+    res.locals.error_msg = req.flash('error_msg');
+    res.locals.error = req.flash('error');
+    next();
+});
+
+
+// Session middleware for production (with HTTPS)
+app.use(session({
+    secret: 'your-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: process.env.NODE_ENV === 'production' }
+}));
 
 passport.use(new GoogleStrategy({
     clientID: 'YOUR_GOOGLE_CLIENT_ID',
