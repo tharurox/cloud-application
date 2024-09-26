@@ -12,6 +12,7 @@ const flash = require('connect-flash');
 const dbPromise = require('./config/database'); // dbPromise is now a promise
 const { spawn } = require('child_process');
 const db = require('./config/database'); // Using MySQL from config/database.js
+const axios = require('axios');
 
 const app = express();
 const port = 3000;
@@ -300,10 +301,14 @@ app.post('/upload', upload.single('video'), async (req, res) => {
     });
 
     try {
+        // Read the video file into memory to avoid chunked encoding
+        const fileData = fs.readFileSync(videoPath);
+
         // Upload the video file to S3 using the presigned URL
-        const videoUploadResponse = await axios.put(presignedVideoUrl, fs.createReadStream(videoPath), {
+        const videoUploadResponse = await axios.put(presignedVideoUrl, fileData, {
             headers: {
                 'Content-Type': req.file.mimetype,
+                'Content-Length': fileData.length, // Specify content length to avoid chunked encoding
             },
         });
         console.log('Video file uploaded to S3:', videoUploadResponse.status);
