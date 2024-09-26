@@ -12,7 +12,7 @@ const flash = require('connect-flash');
 const dbPromise = require('./config/database'); // dbPromise is now a promise
 const { spawn } = require('child_process');
 const db = require('./config/database'); // Using MySQL from config/database.js
-
+const dbPromise = require('./config/database'); // Ensure db is returned as a Promise
 const app = express();
 const port = 3000;
 
@@ -277,6 +277,9 @@ app.get('/logout', (req, res) => {
         res.redirect('/login');
     });
 });
+
+
+
 app.post('/upload', upload.single('video'), async (req, res) => {
     console.log('File upload details:', req.file); // Log the file info
 
@@ -340,6 +343,9 @@ app.post('/upload', upload.single('video'), async (req, res) => {
 
                     console.log('Transcription file uploaded to S3:', transcriptionUploadResponse.status);
 
+                    // Ensure the database connection is initialized
+                    const db = await dbPromise;
+
                     // Store file info in the database
                     const userId = req.session.user.sub;
                     db.query(
@@ -368,7 +374,6 @@ app.post('/upload', upload.single('video'), async (req, res) => {
         res.status(500).send('Error uploading video to S3');
     }
 });
-
 
 // Handle transcription from URL
 app.post('/transcribe_url', isAuthenticated, async (req, res) => {
