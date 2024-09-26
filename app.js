@@ -30,10 +30,10 @@ const { v4: uuidv4 } = require('uuid'); // For unique file names
 
 // Set up S3 with your credentials and region
 const s3 = new AWS.S3({
-    accessKeyId: 'ASIA5DYSEEJ45XQNPEI4', // Use your AWS access key here
-    secretAccessKey: 'vlqiaLPOLeMVScFQGn98mIDSu7ZnJNph1hnDdBbf', // Use your AWS secret key here
+    accessKeyId: 'ASIA5DYSEEJ47L6A6CQI', // Use your AWS access key here
+    secretAccessKey: '+kOBrR9VuucBIkr0XG4yH0NFyPrxrmK4MgkC0chH', // Use your AWS secret key here
     region: 'ap-southeast-2', // The region where your bucket is located
-    aws_session_token : 'IQoJb3JpZ2luX2VjELb//////////wEaDmFwLXNvdXRoZWFzdC0yIkcwRQIgbVIxQ5FOO5o5cEIzTVye998ecVFCKIIImAKayfZQEHECIQDJhQy4sz2QekTMteHOidcAahfoDU1eZKdc8mXxP5RVZyquAwjv//////////8BEAMaDDkwMTQ0NDI4MDk1MyIM8P6S8ORSELqxf0fYKoIDqtFLPf6rmeUXHpwhcV8matCIB987gTTYOAyipHtklNlzbYImgzEIJyss5DiYGf5PiMAmeSxg7fCbpI/mdMPyoWcpYSpp+slDcxtTZW7rD35MFmVjE68V3LfvjG9kYMkv4BcJCA9jm73bhbf1Qh3/GWrInkwn+PtBAbNg5U50tUaZc0OOTfvixmRUZ6m0hFFIdamDLUW7/lFouSED3qcY2Ta4eGzFWvHupoIQK+5pn80dAmUsYfAskzdpe/CJONkdIjDq5kBHHVeWCqk0XHL+vaYiFr1hVAxDH93YHkqcIzVsXE1eHaNqR6l/PUyb6g6qR90gDDuF8pX2fyzBs/vFfCBUGevWCHCgjE5vg8TkFzSg74qB0qa+FP2gNwvI/YQSqkcTQACTkgHTtBTtYOeJ9wVNB5BIEy1dtQQjYWQBvo1QMMvl3+hgarTHAWXntalepAILl/3pKFlU6X81LQhZVssxSCHNJB8CzU3dJ9h8iXmamPzWl29n2WR8bDxeb6RYHcQwnJ/QtwY6pgHJth7FfrwA1a77CelEl+eNQra7lblMv4pqa2xLk5rjYh5fEphPHTC74JWjlip0B76RdPDgl9awZWjjSQzTm9zvQPcSTg8jyNpvz95BtCN/0KNJkF5WJXG7Vg6Udc+M6X0MQ+Qt5Sw6MTZeHbKVMsPzKepNY1uUzJ0gUaPcU/udQ1LL8YN+V5QIHF1RuyChGXUhKYUUEld7tYQEmjAP+Zvnq1gxpk/g'
+    aws_session_token : 'IQoJb3JpZ2luX2VjEML//////////wEaDmFwLXNvdXRoZWFzdC0yIkcwRQIhAPCgmwFoDswUkbWpn2htBtiLTTB1PLzNWH3fTVLkJ6bbAiAfXAgehZUCzJuB9BkfJNjvvBmowHud9cxNUpc8j8wNriquAwj7//////////8BEAMaDDkwMTQ0NDI4MDk1MyIM1kLCSSXc1dqQT+kYKoID3bRoiEyp05phpNTjeURQD0v6YtCy+Im+CF9G3k9PggiK0v7at6SQSQ8+MtsyvjWJht+SOdq/DIxsl6QXmHdVUbxavGbauO9OYCOijw/HosHsGl7qXKlXaFhU5ch84zZADZRWAtJuI/dmhOlw0qQvt/nXqweW8jzBf5BmSeW/Ebjz2cr30xCrToriQkh4Z62t3xVbn/taFeygOMsPQAhRRnvnXz1H3WqwMeBKxzEYOTqBYQwqQcJ1rl7qvRPjEDoerZ2xLxFDG7BuLlILFEWsPe7VDjPlZmT981h5F53fbacq9mcLSfnAb/sx0WwPrn0PS60OB11Kay/ROzPXonzWWuI1o1DejCbLTqKRgsY6Di83TRxQ/W5EnWo2pIyOKq/yl9MyqiWRVPms+/cCKo+YnOr79eOC8N4M7V+Mp96OAvZgvq195wyriV/tggPNmHY1PqFhZrrfzNJVZTE2I5eBRQNtViMtsjCy5k95JliRGuNgpJLLhfKNNJa0vX2HoLBau9Mw8YXTtwY6pgEkq/aLn0IpMKz64HTDZDCCu4uZPC+zZ+0RXvSCzp+dSmB92qwV5zgdmNx+DAfTYT1kpCVhau86ZkDKwSDgMsHK//vthTBD2mIQhUc8gGsJHJ+8ZowyE89U4hHnddJoJ3EpsBNaHfGZpPV0jGHQEBTCG/Uw4KofO3vYfKFfP0dFiEy3b/4IbHQNmFHmEfbyVgwCZh/QPA/z/MflR+TtRx+1I3kAABSa'
 });
 
 const ASSEMBLYAI_API_KEY = 'f6ac0ab5e04141dca16baf2571bc8c5a'; // Replace with your AssemblyAI API key
