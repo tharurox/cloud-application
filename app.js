@@ -9,6 +9,7 @@ const { CognitoUserPool, CognitoUserAttribute, CognitoUser, AuthenticationDetail
 const AWS = require('aws-sdk');
 const jwt = require('jsonwebtoken');
 const flash = require('connect-flash');
+const dbPromise = require('./config/database'); // dbPromise is now a promise
 const { spawn } = require('child_process');
 const db = require('./config/database'); // Using MySQL from config/database.js
 
@@ -157,7 +158,8 @@ app.get('/', isAuthenticated, (req, res) => {
 app.get('/register', (req, res) => {
     res.render('register');
 });
-app.post('/register', (req, res) => {
+// Inside your route where `db.query` is used:
+app.post('/register', async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -172,7 +174,7 @@ app.post('/register', (req, res) => {
     });
     attributeList.push(emailAttribute);
 
-    userPool.signUp(username, password, attributeList, null, (err, data) => {
+    userPool.signUp(username, password, attributeList, null, async (err, data) => {
         if (err) {
             req.flash('error_msg', `Error registering user: ${err.message}`);
             return res.redirect('/register');
@@ -180,23 +182,31 @@ app.post('/register', (req, res) => {
 
         // If the user is successfully registered in Cognito
         const userId = data.userSub; // This is the Cognito User Sub (UUID)
-        
-        // Insert user into the MySQL database
-        const query = `INSERT INTO users (id, username, password) VALUES (?, ?, ?)`;
-        db.query(query, [userId, username, password], (dbErr) => {
-            if (dbErr) {
-                console.error('Error inserting user into MySQL:', dbErr);
-                req.flash('error_msg', 'Error registering user in database.');
-                return res.redirect('/register');
-            }
 
-            req.session.username = username;
-            req.session.userId = userId; // Save the Cognito user ID in the session
-            res.redirect('/verify');
-        });
+        try {
+            // Wait for the db connection pool to resolve
+            const db = await dbPromise;
+
+            // Insert user into the MySQL database
+            const query = `INSERT INTO users (id, username, password) VALUES (?, ?, ?)`;
+            db.query(query, [userId, username, password], (dbErr) => {
+                if (dbErr) {
+                    console.error('Error inserting user into MySQL:', dbErr);
+                    req.flash('error_msg', 'Error registering user in database.');
+                    return res.redirect('/register');
+                }
+
+                req.session.username = username;
+                req.session.userId = userId; // Save the Cognito user ID in the session
+                res.redirect('/verify');
+            });
+        } catch (error) {
+            console.error('Error handling db connection:', error);
+            req.flash('error_msg', 'Database connection error.');
+            res.redirect('/register');
+        }
     });
 });
-
 
 // Verification page
 app.get('/verify', (req, res) => {
