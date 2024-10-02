@@ -15,8 +15,6 @@ const app = express();
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
-const flash = require('connect-flash');
-
 const port = 3000;
 
 // Set up session management
