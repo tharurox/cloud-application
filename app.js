@@ -16,14 +16,19 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
 const port = 3000;
+const GOOGLE_ID = "909473958500-h7qm6q6mpfkldnrb5b27iqdggtm87ek6.apps.googleusercontent.com";
+const Google_secret = "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";
+const Google_callback_url="/auth/google/callback";
 
 // Set up session management
 app.use(session({
-    secret: 'your-secret-key', // Replace with your own secret key
+    secret: 'IQoJb3JpZ2luX2VjEFYaDmFwLXNvdXRoZWFzdC0yIkcwRQIgEvuMejNGLNOpuvoCtxwsx8I2y0yDskPm5oUiDWAmnHsCIQCaOL/DDCe/mCeRc9NuNSBlJHoK+f/NIEv5Xmj2ysIpuSquAwif//////////8BEAMaDDkwMTQ0NDI4MDk1MyIMJd0TzO9yPAS+aEHQKoIDYuReFgMTignFK8lOpnLMnwkUjJh7XoEV6CfaduLpm4NNCDil1fz+ezxOqIhw12Djgf6N/Zr0yyys3EGr95t6/FxvRQSZ0caTB9dkexVmvBnK7BXWlYhHyhpXcsY3lTast1J4pALIHaTZGiZeQ+C/pyA3bswbg9mLMaOK6ka0Kl4VMuhjdRQLsGmkG6dtjNW38Jf2x8qF2rWcbiB6Ewk++F3ilI+IKt7JBy296qfvLTpAntbygIb28m7QV9xnOVeN12+NOG4moVg8Td16FVYsablCXKKiu4T/PAPbFRGgCRKSQBqgwjrzxASsOmufn6o0xoN2xN5UuAmNdtvCpDF39hXJ8+Ke9fYX64imxQI7fCQin758hziCJS1CVgnYN9DO5Wj1aLO3H70rRDbe7n208sPWIg4EcIzMXeKznf/RAu9GyQn+9jExGoeAkbsENVvcGI2kKYp0jh6FTFXe4W/XUNtd+tcDqz95iXPZECu0Rl+qN2G0T7daXYk0ObYiT/vfhtEwmMvztwY6pgGd6ZuOOerB1X2Vr3+BYTrjVPaEJTZprKHH/ZPqTAFhiTY2SGfuQ+pjM0yGsWLEWDtMWrUhVNflYsT0TG17QEYiML5jn6CsdyDH+Rw462dZCUn0HJQCHvwbsM1FEaKv8c5rEGgUZhyjON9qdnazIGuYNZ3KAnfawHF6vtjgWvaSgvLCyTJJtOZ7Bk8p2z29WRj0rDZOYaMHVF1E/Ud4G6pfkE4RLlhH', // Replace with your own secret key
     resave: false, // Don't save the session if it's not modified
     saveUninitialized: false, // Don't create session until something is stored
     cookie: { secure: false } // Set secure to true if using HTTPS
 }));
+
+
 
 // Set up flash middleware for flash messages
 app.use(flash());
@@ -37,9 +42,9 @@ app.use((req, res, next) => {
 });
 
 passport.use(new GoogleStrategy({
-    clientID: 'YOUR_GOOGLE_CLIENT_ID',
-    clientSecret: 'YOUR_GOOGLE_CLIENT_SECRET',
-    callbackURL: '/auth/google/callback'
+    clientID: GOOGLE_ID,
+    clientSecret: Google_secret,
+    callbackURL: Google_callback_url
 }, (token, tokenSecret, profile, done) => {
     // Here you can link the Google profile to a user in your database
     done(null, profile);
@@ -58,9 +63,9 @@ app.use(passport.session());
 
 
 passport.use(new GoogleStrategy({
-    clientID: 'YOUR_GOOGLE_CLIENT_ID',
-    clientSecret: 'YOUR_GOOGLE_CLIENT_SECRET',
-    callbackURL: '/auth/google/callback'
+    clientID: GOOGLE_ID,
+    clientSecret: Google_secret,
+    callbackURL: Google_callback_url
 }, (token, tokenSecret, profile, done) => {
     // Here you can link the Google profile to a user in your database
     done(null, profile);
@@ -125,10 +130,10 @@ const { v4: uuidv4 } = require('uuid'); // For unique file names
 
 // Set up S3 with your credentials and region
 const s3 = new AWS.S3({
-    accessKeyId: 'ASIA5DYSEEJ4YYUILWYJ', // Use your AWS access key here
-    secretAccessKey: 'BLa3C+nKX/4A0tuJqv1PvePHzkMliq0bIft7Dkwb', // Use your AWS secret key here
+    accessKeyId: 'ASIA5DYSEEJ4WT2J5PHM', // Use your AWS access key here
+    secretAccessKey: 'OGAjfUDjcQ1awpkkYNB+vRA38RpZI9RZ9dIiNKZf', // Use your AWS secret key here
     region: 'ap-southeast-2', // The region where your bucket is located
-    sessionToken  : 'IQoJb3JpZ2luX2VjEMv//////////wEaDmFwLXNvdXRoZWFzdC0yIkcwRQIgF856wq3jcq6c+/ZFEHyK0yP5MgoyHBN+0qA2+4s/7ogCIQDCN/x3M+UAoaMGzRpR4aNoOU9DqNet+da2bnkD4NTltSqlAwgUEAMaDDkwMTQ0NDI4MDk1MyIMuKCsXMBHU1Kze+RuKoIDxX5d427H9f4f5mJvkA5ZyUAbcvL+DNX/9V9+gzZ3euHEc13rwUTT0wZi348+38N1+KBQM1lWTdIs1FYpk29vRmwylJAN4ubfyh1xiiUltPhuPYwOxgdy28F5LjqvyijBO3NAY0ND0QV7Q+y1USH9BAkNYcvEBlNKqERqARj/2+3HHan5gdkw+S/tAnzkCyHLaNxUgTXZw/woKwYZ7D7HSWaNH/zpBe67f8Buf30DCrwGIJdXtcltnM9tXw6l4nnQM7RiUe/kNEco4GoR2NaBQVpaTU17rKgUNtmIBSKvQgfMx+85eJoavJ/Gf71uTZI2m+AGzjRetjQRPhlUvtnSggkx9Z7+K28d3he9Fu2Pqra0uD9rluzBgao6hYIpzNvUhRGGbJtNeUnb5JQgHukc/NazfX0tcAxru2hDZz+3FfAtHdw0I1KIyDAPBlagwFc6T498YLwWhfsV1vxrqJf00qE7UHTvEdZAfBDCtnKT99Ui/1zE1pfzMn0G+iMWMlYAE04wpffUtwY6pgEDaUpx6m5d/dI4GOjpFQlhawAjcB0c0dcF1fkevjYXcuTulkexXu8WS/6+tjBXXZO321J3p5sG5lMrYSl5e6Qwd7nlksVALHgT/z2ojElwFa/gsyxUPdN7Eq+pV+u+ywYeYkH5XH9hloBDYWrT2tRQ7xJg/VZNaxVjae3muF4D+HrMQ+q3KrKVvdhwaD+cvt8LiDeYG/j3B2AwHicxUoGAT8I8CVkO'
+    sessionToken  : 'IQoJb3JpZ2luX2VjEFYaDmFwLXNvdXRoZWFzdC0yIkcwRQIgEvuMejNGLNOpuvoCtxwsx8I2y0yDskPm5oUiDWAmnHsCIQCaOL/DDCe/mCeRc9NuNSBlJHoK+f/NIEv5Xmj2ysIpuSquAwif//////////8BEAMaDDkwMTQ0NDI4MDk1MyIMJd0TzO9yPAS+aEHQKoIDYuReFgMTignFK8lOpnLMnwkUjJh7XoEV6CfaduLpm4NNCDil1fz+ezxOqIhw12Djgf6N/Zr0yyys3EGr95t6/FxvRQSZ0caTB9dkexVmvBnK7BXWlYhHyhpXcsY3lTast1J4pALIHaTZGiZeQ+C/pyA3bswbg9mLMaOK6ka0Kl4VMuhjdRQLsGmkG6dtjNW38Jf2x8qF2rWcbiB6Ewk++F3ilI+IKt7JBy296qfvLTpAntbygIb28m7QV9xnOVeN12+NOG4moVg8Td16FVYsablCXKKiu4T/PAPbFRGgCRKSQBqgwjrzxASsOmufn6o0xoN2xN5UuAmNdtvCpDF39hXJ8+Ke9fYX64imxQI7fCQin758hziCJS1CVgnYN9DO5Wj1aLO3H70rRDbe7n208sPWIg4EcIzMXeKznf/RAu9GyQn+9jExGoeAkbsENVvcGI2kKYp0jh6FTFXe4W/XUNtd+tcDqz95iXPZECu0Rl+qN2G0T7daXYk0ObYiT/vfhtEwmMvztwY6pgGd6ZuOOerB1X2Vr3+BYTrjVPaEJTZprKHH/ZPqTAFhiTY2SGfuQ+pjM0yGsWLEWDtMWrUhVNflYsT0TG17QEYiML5jn6CsdyDH+Rw462dZCUn0HJQCHvwbsM1FEaKv8c5rEGgUZhyjON9qdnazIGuYNZ3KAnfawHF6vtjgWvaSgvLCyTJJtOZ7Bk8p2z29WRj0rDZOYaMHVF1E/Ud4G6pfkE4RLlhH'
 });
 
 const ASSEMBLYAI_API_KEY = 'f6ac0ab5e04141dca16baf2571bc8c5a'; // Replace with your AssemblyAI API key
