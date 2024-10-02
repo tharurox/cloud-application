@@ -106,9 +106,9 @@ AWS.config.update({
 
 
 passport.use(new GoogleStrategy({
-    clientID: 'YOUR_GOOGLE_CLIENT_ID',
-    clientSecret: 'YOUR_GOOGLE_CLIENT_SECRET',
-    callbackURL: '/auth/google/callback'
+    clientID: GOOGLE_ID,
+    clientSecret: Google_secret,
+    callbackURL: Google_callback_url
 }, (token, tokenSecret, profile, done) => {
     // Here you can link the Google profile to a user in your database
     done(null, profile);
