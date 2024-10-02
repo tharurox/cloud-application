@@ -4,7 +4,6 @@ const path = require('path');
 const fs = require('fs');
 const ffmpeg = require('fluent-ffmpeg');
 const axios = require('axios');
-const session = require('express-session');
 const { CognitoUserPool, CognitoUserAttribute, CognitoUser, AuthenticationDetails } = require('amazon-cognito-identity-js');
 const AWS = require('aws-sdk');
 const jwt = require('jsonwebtoken');
