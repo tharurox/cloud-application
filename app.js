@@ -374,7 +374,7 @@ app.get('/auth/google/callback',
         const googleIdToken = req.user.idToken;
 
         const params = {
-            IdentityPoolId: 'YOUR_COGNITO_IDENTITY_POOL_ID',
+            IdentityPoolId: 'ap-southeast-2_I9D8Pcsv0',
             Logins: {
                 'accounts.google.com': googleIdToken
             }
