@@ -369,39 +369,55 @@ app.post('/login', (req, res) => {
 });
 
 const cognitoIdentity = new AWS.CognitoIdentity();
+// Google authentication route with required scope
+app.get('/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+);
 
+// Google callback route
 app.get('/auth/google/callback',
     passport.authenticate('google', { failureRedirect: '/login' }),
     (req, res) => {
-        const googleIdToken = req.user.idToken;
+        // The Google profile will be available in req.user
+        const googleIdToken = req.user.idToken || req.user._json.sub; // Ensure proper access to the idToken
+
+        // Check if googleIdToken is present
+        if (!googleIdToken) {
+            console.error('Missing Google idToken');
+            return res.redirect('/login');
+        }
 
         const params = {
-            IdentityPoolId: 'ap-southeast-2_I9D8Pcsv0',
+            IdentityPoolId: 'ap-southeast-2_I9D8Pcsv0',  // Your Cognito Identity Pool Id
             Logins: {
-                'accounts.google.com': googleIdToken
+                'accounts.google.com': googleIdToken // Use Google idToken for Cognito identity federation
             }
         };
 
+        // Call Cognito Identity service to get an identityId
         cognitoIdentity.getId(params, (err, data) => {
             if (err) {
-                console.error(err);
+                console.error('Error fetching Cognito ID:', err);
                 return res.redirect('/login');
             }
 
+            // Once identityId is obtained, fetch credentials
             cognitoIdentity.getCredentialsForIdentity({
                 IdentityId: data.IdentityId,
                 Logins: params.Logins
             }, (err, credentials) => {
                 if (err) {
-                    console.error(err);
+                    console.error('Error fetching Cognito credentials:', err);
                     return res.redirect('/login');
                 }
 
+                // Store credentials in session and redirect to the home page
                 req.session.credentials = credentials;
                 res.redirect('/');
             });
         });
-    });
+    }
+);
 
 // Logout route
 app.get('/logout', (req, res) => {
