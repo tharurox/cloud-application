@@ -387,68 +387,68 @@ app.get('/auth/google',
     passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
-
 app.get('/auth/google/callback',
     passport.authenticate('google', { failureRedirect: '/login' }),
     async (req, res) => {
-      // Extract ID token from the user profile or accessToken returned by Google
-      const googleIdToken = req.user.id_token || req.user._json.sub || req.user.accessToken;
-  
-      if (!googleIdToken) {
-        console.error('Missing Google idToken');
-        return res.redirect('/login');
-      }
-  
-      try {
-        // Log the Google user profile to confirm the data received
-        console.log('Google profile:', req.user);
-  
-        // Verify the Google ID token to ensure it's valid (optional step for debugging)
-        const payload = await verifyGoogleToken(googleIdToken); // Assuming verifyGoogleToken is defined elsewhere for validation
-        console.log('Verified Google Token Payload:', payload);
-        
-        // If verification is successful, proceed with Cognito integration
-        const params = {
-          IdentityPoolId: 'ap-southeast-2:04b1c923-0159-4f10-a4ed-1b5a9fa53904',
-          Logins: {
-            'accounts.google.com': googleIdToken,
-          },
-        };
-  
-        cognitoIdentity.getId(params, (err, data) => {
-          if (err) {
-            console.error('Error fetching Cognito ID:', err);
+        // Log the entire profile to verify what is returned by Google
+        console.log('Google Profile:', req.user);
+
+        // Extract the ID token correctly
+        // Google does not return `idToken` directly in the profile object, so use accessToken or another property
+        const googleIdToken = req.user.accessToken;
+
+        if (!googleIdToken || googleIdToken.split('.').length !== 3) {
+            console.error('Missing or invalid Google idToken');
             return res.redirect('/login');
-          }
-  
-          // Log the returned Cognito Identity data for debugging
-          console.log('Cognito Identity ID:', data.IdentityId);
-  
-          // Once identityId is obtained, fetch credentials
-          cognitoIdentity.getCredentialsForIdentity(
-            {
-              IdentityId: data.IdentityId,
-              Logins: params.Logins,
-            },
-            (err, credentials) => {
-              if (err) {
-                console.error('Error fetching Cognito credentials:', err);
-                return res.redirect('/login');
-              }
-  
-              // Store credentials in session and redirect to the home page
-              console.log('Cognito Credentials:', credentials);
-              req.session.credentials = credentials;
-              res.redirect('/trancode'); // Redirect to the home page or desired route after login
-            }
-          );
-        });
-      } catch (error) {
-        console.error('Invalid Google ID token:', error);
-        return res.redirect('/login');
-      }
+        }
+
+        try {
+            // Verify the Google ID token (if necessary)
+            const payload = await verifyGoogleToken(googleIdToken);
+            console.log('Verified Google Token Payload:', payload);
+
+            // If verification is successful, proceed with Cognito integration
+            const params = {
+                IdentityPoolId: 'ap-southeast-2:04b1c923-0159-4f10-a4ed-1b5a9fa53904',
+                Logins: {
+                    'accounts.google.com': googleIdToken,  // Use Google ID token for Cognito identity
+                },
+            };
+
+            cognitoIdentity.getId(params, (err, data) => {
+                if (err) {
+                    console.error('Error fetching Cognito ID:', err);
+                    return res.redirect('/login');
+                }
+
+                console.log('Cognito Identity ID:', data.IdentityId);
+
+                // Once identityId is obtained, fetch credentials
+                cognitoIdentity.getCredentialsForIdentity(
+                    {
+                        IdentityId: data.IdentityId,
+                        Logins: params.Logins,
+                    },
+                    (err, credentials) => {
+                        if (err) {
+                            console.error('Error fetching Cognito credentials:', err);
+                            return res.redirect('/login');
+                        }
+
+                        // Store credentials in session and redirect to the home page
+                        console.log('Cognito Credentials:', credentials);
+                        req.session.credentials = credentials;
+                        res.redirect('/');  // Redirect to the desired route after login
+                    }
+                );
+            });
+        } catch (error) {
+            console.error('Invalid Google ID token:', error);
+            return res.redirect('/login');
+        }
     }
-  );
+);
+
   
 // Logout route
 app.get('/logout', (req, res) => {
