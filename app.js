@@ -48,9 +48,9 @@ passport.use(new GoogleStrategy({
     clientSecret: Google_secret,
     callbackURL: Google_callback_url,
     scope: ['profile', 'email']  // Include required scopes
-}, (token, tokenSecret, profile, done) => {
-    // Here you can link the Google profile to a user in your database
-    done(null, profile);
+}, (token, refreshToken, profile, done) => {
+    profile.idToken = token;  // Save the ID token to the profile object
+    return done(null, profile);
 }));
 
 passport.serializeUser((user, done) => {
