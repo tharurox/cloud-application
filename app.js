@@ -405,7 +405,8 @@ app.get('/auth/google/callback',
   
         // Verify the Google ID token to ensure it's valid (optional step for debugging)
         const payload = await verifyGoogleToken(googleIdToken); // Assuming verifyGoogleToken is defined elsewhere for validation
-  
+        console.log('Verified Google Token Payload:', payload);
+        
         // If verification is successful, proceed with Cognito integration
         const params = {
           IdentityPoolId: 'ap-southeast-2:04b1c923-0159-4f10-a4ed-1b5a9fa53904',
