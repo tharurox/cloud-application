@@ -468,7 +468,7 @@ app.get('/auth/google/callback',
               // Store credentials in session and redirect to the home page
               console.log('Cognito Credentials:', credentials);
               req.session.credentials = credentials;
-              res.redirect('/trancode'); // Redirect to the home page or desired route after login
+              res.render('index'); // Redirect to the home page or desired route after login
             }
           );
         });
