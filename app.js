@@ -391,7 +391,7 @@ app.get('/auth/google',
     passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
-/ Google Callback Route with Proper ID Token Handling
+// Google Callback Route with Proper ID Token Handling
 app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/login' }),
   async (req, res) => {
