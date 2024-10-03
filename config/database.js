@@ -31,7 +31,7 @@ getAwsSecrets(secretName)
       accessKeyId: secrets.accessKeyId,
       secretAccessKey: secrets.secretAccessKey,
       region: 'ap-southeast-2', // Ensure the region is always set
-      sessionToken: secrets.sessionToken // Include only if the session token exists
+      sessionToken: 'IQoJb3JpZ2luX2VjEHQaDmFwLXNvdXRoZWFzdC0yIkYwRAIgZpDQKxHX8pqfNOdA5RblJ264fHIfPT2vS4H/zlX5vKgCIBdeazPJzNHRoIcwLC0eL4H3yHEXPz7ygyuyLh6+x39QKq4DCL3//////////wEQAxoMOTAxNDQ0MjgwOTUzIgyPDkw4CQA1gK/W5i4qggMzdhHhRz9tzAx/2hU20ygsR99NL1BYUarvBYh2ypJUGrC+knWeFNGuTsEWqh/tKzFtxLfrbeAkNNnmGMHPTW/llRALxzTZemueZWsZGGb6CUkhlpQRmcE8ObLb8ecAn5Uv0enAu+0fDOvLCb5aldKid8T3PTYGFTKMxSHZs8kv/9XTm+dHyUD337Rwe5Ldbh5mHDooLXL2zQ8mwMeyrRgJp1d5ir+hN3hEkxArDthDbcVbFu0W/SOjfYOeQ9VWnvcsIkO2Cp/5fdsW7aCjtPIs6FK6s3Cc89m8jkiSWq41ktJ6ls7jpHm/v7rVqqEfvi3Zq/FFsHPyP5UGyRqtfMdyRf471SV0p9oEvIuHmB2QB+tSiWbNlx3U95I/vxKPBZAP/P6RB1QEKMNqlAnnMDKg5rq9fWPDvIqvIw7oqM9Iw+cI1LPaAYeAOItNMbCFCFI//cV/LnDYmtdik9/J0/SpS2SWYSFHU7B/esgMca+xLxJI3SAU98OKiocuyHGtEBiPdzClmPq3BjqnAWhr3kjV8r5gaBQLPCpKgA9IfIardbrRy11YNZKn7WjeutbpRWcrCiHqwsOWmn0Pp1hyXjR2aC6at4loaLDQBG1ioHBEyM4zBGaZC1GNR2+8rIXKQp9/Xv38v2eDmqz6YC79B8hmEMEaE3EMTJ9a8javLMgaO24PdJjLD3VreIK+zE+dZbQ+sLtsM9iCXs6NGTenjxcuFsNIy+FL4kM96c3+ZyScgX38' // Include only if the session token exists
     });
 
     console.log('AWS SDK configured successfully with secrets from AWS Secrets Manager.');
