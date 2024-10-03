@@ -389,7 +389,7 @@ app.get('/auth/google/callback',
         }
 
         const params = {
-            IdentityPoolId: 'ap-southeast-2_I9D8Pcsv0',  // Your Cognito Identity Pool Id
+            IdentityPoolId: 'ap-southeast-2:04b1c923-0159-4f10-a4ed-1b5a9fa53904',  // Your Cognito Identity Pool Id
             Logins: {
                 'accounts.google.com': googleIdToken // Use Google idToken for Cognito identity federation
             }
