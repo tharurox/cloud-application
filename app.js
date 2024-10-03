@@ -46,7 +46,7 @@ getSecrets(secretName).then(secrets => {
     accessKeyId: secrets.accessKeyId,
     secretAccessKey: secrets.secretAccessKey,
     sessionToken: secrets.sessionToken, // Include if you have a session token
-    region: secrets.region
+    region: 'ap-southeast-2' // Ensure the region is always set
   });
 
 
