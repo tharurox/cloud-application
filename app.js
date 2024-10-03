@@ -295,7 +295,10 @@ app.get('/register', (req, res) => {
 app.post('/register', async (req, res) => {
     const { username, password } = req.body;
 
+    console.log('Received registration request:', req.body);
+
     if (!username || !password) {
+        console.log('Missing username or password');
         req.flash('error_msg', 'Username and password are required.');
         return res.redirect('/register');
     }
@@ -307,20 +310,25 @@ app.post('/register', async (req, res) => {
     });
     attributeList.push(emailAttribute);
 
+    console.log('Attempting to register user with Cognito:', username);
+
     userPool.signUp(username, password, attributeList, null, async (err, data) => {
         if (err) {
+            console.error('Error registering user in Cognito:', err.message);
             req.flash('error_msg', `Error registering user: ${err.message}`);
             return res.redirect('/register');
         }
 
-        // If the user is successfully registered in Cognito
+        console.log('Successfully registered user in Cognito:', data);
+
         const userId = data.userSub; // This is the Cognito User Sub (UUID)
+        console.log('User ID from Cognito:', userId);
 
         try {
-            // Wait for the db connection pool to resolve
+            console.log('Waiting for DB connection...');
             const db = await dbPromise;
+            console.log('DB connection established.');
 
-            // Insert user into the MySQL database
             const query = `INSERT INTO users (id, username, password) VALUES (?, ?, ?)`;
             db.query(query, [userId, username, password], (dbErr) => {
                 if (dbErr) {
@@ -329,8 +337,10 @@ app.post('/register', async (req, res) => {
                     return res.redirect('/register');
                 }
 
+                console.log('User successfully inserted into MySQL database.');
                 req.session.username = username;
                 req.session.userId = userId; // Save the Cognito user ID in the session
+                console.log('Session set for user:', username);
                 res.redirect('/verify');
             });
         } catch (error) {
@@ -340,6 +350,7 @@ app.post('/register', async (req, res) => {
         }
     });
 });
+
 
 // Verification page
 app.get('/verify', (req, res) => {
