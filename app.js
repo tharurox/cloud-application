@@ -385,7 +385,7 @@ app.get('/auth/google/callback',
         // Check if googleIdToken is present
         if (!googleIdToken) {
             console.error('Missing Google idToken');
-            return res.redirect('/login');
+            return res.redirect('/');
         }
 
         const params = {
