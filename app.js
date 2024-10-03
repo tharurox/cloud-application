@@ -17,44 +17,50 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
 require('dotenv').config();
 
-AWS.config.update({
-    region: 'ap-southeast-2'
-});
+const ssm = new AWS.SSM({ region: process.env.AWS_REGION });
 
-const secretsManager = new AWS.SecretsManager({ region: process.env.AWS_REGION });
-
-// Function to get secrets from Secrets Manager
-const getSecrets = async (secretName) => {
-  try {
-    const secretValue = await secretsManager.getSecretValue({ SecretId: secretName }).promise();
-
-    if ('SecretString' in secretValue) {
-      return JSON.parse(secretValue.SecretString);
+// Define the SSM parameter names
+const parameterNames = [
+    '/n11849622/app/accessKeyId',
+    'n11849622/app/secretAccessKey',
+    '/n11849622/app/region',
+    '/n11849622/app/sessionToken'
+  ];
+  
+ // Create a function to retrieve the parameters from SSM
+const getSSMParameters = async () => {
+    const params = {
+      Names: parameterNames,
+      WithDecryption: true, // Set to true for SecureString parameters
+    };
+  
+    try {
+      const response = await ssm.getParameters(params).promise();
+      const parameterMap = {};
+      
+      // Map parameters to a key-value object
+      response.Parameters.forEach(param => {
+        const paramName = param.Name.split('/').pop(); // Get the last part of the name
+        parameterMap[paramName] = param.Value;
+      });
+  
+      return parameterMap;
+    } catch (error) {
+      console.error('Error retrieving parameters from SSM:', error);
+      throw error;
     }
-    throw new Error(`Secret ${secretName} does not contain a valid SecretString.`);
-  } catch (err) {
-    console.error('Error retrieving secret from Secrets Manager:', err);
-    throw err;
-  }
-};
-
-// Retrieve the secret and configure the S3 client
-const secretName = '/n11849622/app';
-
-getSecrets(secretName).then(secrets => {
-  const s3 = new AWS.S3({
-    accessKeyId: secrets.accessKeyId,
-    secretAccessKey: secrets.secretAccessKey,
-    sessionToken: secrets.sessionToken, // Include if you have a session token
-    region: 'ap-southeast-2' // Ensure the region is always set
-  });
+  };
 
 
-  console.log('S3 client configured successfully!');
-}).catch(err => {
-  console.error('Failed to configure S3 client:', err);
+  // Retrieve SSM parameters and configure the S3 client
+getSSMParameters().then(ssmParams => {
+    const s3 = new AWS.S3({
+      accessKeyId: ssmParams.accessKeyId,
+      secretAccessKey: ssmParams.secretAccessKey,
+      region: ssmParams.region,
+      sessionToken: ssmParams.sessionToken
 });
-
+  
 
 const port = 3000;
 const GOOGLE_ID = "909473958500-h7qm6q6mpfkldnrb5b27iqdggtm87ek6.apps.googleusercontent.com";
@@ -62,21 +68,13 @@ const Google_secret = "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";
 const Google_callback_url="http://n11849622.cab432.com:3000/auth/google/callback";
 
 // Set up session management
-getSecrets(secretName)
-  .then((sessionSecret) => {
-    // Use the retrieved session secret in the session configuration
-    app.use(session({
-      secret: sessionSecret.sessionToken, // Use the secret value from Secrets Manager
-      resave: false,         // Don't save the session if it's not modified
-      saveUninitialized: false, // Don't create session until something is stored
-      cookie: { secure: false } // Set secure to true if using HTTPS
-    }));
+app.use(session({
+    secret: 'IQoJb3JpZ2luX2VjEFYaDmFwLXNvdXRoZWFzdC0yIkcwRQIgEvuMejNGLNOpuvoCtxwsx8I2y0yDskPm5oUiDWAmnHsCIQCaOL/DDCe/mCeRc9NuNSBlJHoK+f/NIEv5Xmj2ysIpuSquAwif//////////8BEAMaDDkwMTQ0NDI4MDk1MyIMJd0TzO9yPAS+aEHQKoIDYuReFgMTignFK8lOpnLMnwkUjJh7XoEV6CfaduLpm4NNCDil1fz+ezxOqIhw12Djgf6N/Zr0yyys3EGr95t6/FxvRQSZ0caTB9dkexVmvBnK7BXWlYhHyhpXcsY3lTast1J4pALIHaTZGiZeQ+C/pyA3bswbg9mLMaOK6ka0Kl4VMuhjdRQLsGmkG6dtjNW38Jf2x8qF2rWcbiB6Ewk++F3ilI+IKt7JBy296qfvLTpAntbygIb28m7QV9xnOVeN12+NOG4moVg8Td16FVYsablCXKKiu4T/PAPbFRGgCRKSQBqgwjrzxASsOmufn6o0xoN2xN5UuAmNdtvCpDF39hXJ8+Ke9fYX64imxQI7fCQin758hziCJS1CVgnYN9DO5Wj1aLO3H70rRDbe7n208sPWIg4EcIzMXeKznf/RAu9GyQn+9jExGoeAkbsENVvcGI2kKYp0jh6FTFXe4W/XUNtd+tcDqz95iXPZECu0Rl+qN2G0T7daXYk0ObYiT/vfhtEwmMvztwY6pgGd6ZuOOerB1X2Vr3+BYTrjVPaEJTZprKHH/ZPqTAFhiTY2SGfuQ+pjM0yGsWLEWDtMWrUhVNflYsT0TG17QEYiML5jn6CsdyDH+Rw462dZCUn0HJQCHvwbsM1FEaKv8c5rEGgUZhyjON9qdnazIGuYNZ3KAnfawHF6vtjgWvaSgvLCyTJJtOZ7Bk8p2z29WRj0rDZOYaMHVF1E/Ud4G6pfkE4RLlhH', // Replace with your own secret key
+    resave: false, // Don't save the session if it's not modified
+    saveUninitialized: false, // Don't create session until something is stored
+    cookie: { secure: false } // Set secure to true if using HTTPS
+}));
 
-    console.log('Session configured successfully with secret from AWS Secrets Manager.');
-  })
-  .catch((err) => {
-    console.error('Failed to configure session:', err);
-  });
 const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(GOOGLE_ID);
 
@@ -162,6 +160,10 @@ const poolData = {
 };
 const userPool = new CognitoUserPool(poolData);
 
+AWS.config.update({
+    region: 'ap-southeast-2'
+});
+
 
 passport.use(new GoogleStrategy({
     clientID: GOOGLE_ID,
@@ -185,6 +187,14 @@ app.use(passport.session());
 
 
 const { v4: uuidv4 } = require('uuid'); // For unique file names
+
+// Set up S3 with your credentials and region
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
+  sessionToken: process.env.AWS_SESSION_TOKEN
+});
 
 const ASSEMBLYAI_API_KEY = 'f6ac0ab5e04141dca16baf2571bc8c5a'; // Replace with your AssemblyAI API key
 
