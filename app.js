@@ -17,6 +17,9 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
 require('dotenv').config();
 
+AWS.config.update({
+    region: 'ap-southeast-2'
+});
 
 const secretsManager = new AWS.SecretsManager({ region: process.env.AWS_REGION });
 
@@ -158,10 +161,6 @@ const poolData = {
     ClientId: '3jlv0og5l1mkjnq1tdb7bg3ini'
 };
 const userPool = new CognitoUserPool(poolData);
-
-AWS.config.update({
-    region: 'ap-southeast-2'
-});
 
 
 passport.use(new GoogleStrategy({
