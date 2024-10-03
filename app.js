@@ -59,7 +59,7 @@ const Google_secret = "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";
 const Google_callback_url="http://n11849622.cab432.com:3000/auth/google/callback";
 
 // Set up session management
-getSessionSecret(secretName)
+getSecrets(secretName)
   .then((sessionSecret) => {
     // Use the retrieved session secret in the session configuration
     app.use(session({
