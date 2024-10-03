@@ -397,11 +397,6 @@ app.get('/auth/google/callback',
         // Google does not return `idToken` directly in the profile object, so use accessToken or another property
         const googleIdToken = req.user.accessToken;
 
-        if (!googleIdToken || googleIdToken.split('.').length !== 3) {
-            console.error('Missing or invalid Google idToken');
-            return res.redirect('/login');
-        }
-
         try {
             // Verify the Google ID token (if necessary)
             const payload = await verifyGoogleToken(googleIdToken);
