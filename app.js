@@ -20,7 +20,7 @@ require('dotenv').config();
 const port = 3000;
 const GOOGLE_ID = "909473958500-h7qm6q6mpfkldnrb5b27iqdggtm87ek6.apps.googleusercontent.com";
 const Google_secret = "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";
-const Google_callback_url="/auth/google/callback";
+const Google_callback_url="http://n11849622.cab432.com:3000/auth/google/callback";
 
 // Set up session management
 app.use(session({
