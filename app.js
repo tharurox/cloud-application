@@ -46,7 +46,8 @@ app.use((req, res, next) => {
 passport.use(new GoogleStrategy({
     clientID: GOOGLE_ID,
     clientSecret: Google_secret,
-    callbackURL: Google_callback_url
+    callbackURL: Google_callback_url,
+    scope: ['profile', 'email']  // Include required scopes
 }, (token, tokenSecret, profile, done) => {
     // Here you can link the Google profile to a user in your database
     done(null, profile);
