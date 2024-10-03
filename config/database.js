@@ -1,46 +1,16 @@
 const mysql = require('mysql2');
 const AWS = require('aws-sdk');
-// Create a Secrets Manager client
-const secretsManager = new AWS.SecretsManager({ region: 'ap-southeast-2' }); // Replace with your region
+require('dotenv').config();
+
 AWS.config.update({
-  region: 'ap-southeast-2'
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
+  sessionToken: process.env.AWS_SESSION_TOKEN
 });
-
-// Function to get AWS credentials from Secrets Manager
-const getAwsSecrets = async (secretName) => {
-  try {
-    const secretValue = await secretsManager.getSecretValue({ SecretId: secretName }).promise();
-
-    if ('SecretString' in secretValue) {
-      return JSON.parse(secretValue.SecretString);
-    }
-    throw new Error(`Secret ${secretName} does not contain a valid SecretString.`);
-  } catch (err) {
-    console.error('Failed to retrieve secret from Secrets Manager:', err);
-    throw err;
-  }
-};
-
-// Define the secret name (use the same name you set in Secrets Manager)
-const secretName = '/n11849622/app';
-
-getAwsSecrets(secretName)
-  .then((secrets) => {
-    // Use secrets to configure the AWS SDK
-    AWS.config.update({
-      accessKeyId: secrets.accessKeyId,
-      secretAccessKey: secrets.secretAccessKey,
-      region: 'ap-southeast-2', // Ensure the region is always set
-      sessionToken: 'IQoJb3JpZ2luX2VjEHQaDmFwLXNvdXRoZWFzdC0yIkYwRAIgZpDQKxHX8pqfNOdA5RblJ264fHIfPT2vS4H/zlX5vKgCIBdeazPJzNHRoIcwLC0eL4H3yHEXPz7ygyuyLh6+x39QKq4DCL3//////////wEQAxoMOTAxNDQ0MjgwOTUzIgyPDkw4CQA1gK/W5i4qggMzdhHhRz9tzAx/2hU20ygsR99NL1BYUarvBYh2ypJUGrC+knWeFNGuTsEWqh/tKzFtxLfrbeAkNNnmGMHPTW/llRALxzTZemueZWsZGGb6CUkhlpQRmcE8ObLb8ecAn5Uv0enAu+0fDOvLCb5aldKid8T3PTYGFTKMxSHZs8kv/9XTm+dHyUD337Rwe5Ldbh5mHDooLXL2zQ8mwMeyrRgJp1d5ir+hN3hEkxArDthDbcVbFu0W/SOjfYOeQ9VWnvcsIkO2Cp/5fdsW7aCjtPIs6FK6s3Cc89m8jkiSWq41ktJ6ls7jpHm/v7rVqqEfvi3Zq/FFsHPyP5UGyRqtfMdyRf471SV0p9oEvIuHmB2QB+tSiWbNlx3U95I/vxKPBZAP/P6RB1QEKMNqlAnnMDKg5rq9fWPDvIqvIw7oqM9Iw+cI1LPaAYeAOItNMbCFCFI//cV/LnDYmtdik9/J0/SpS2SWYSFHU7B/esgMca+xLxJI3SAU98OKiocuyHGtEBiPdzClmPq3BjqnAWhr3kjV8r5gaBQLPCpKgA9IfIardbrRy11YNZKn7WjeutbpRWcrCiHqwsOWmn0Pp1hyXjR2aC6at4loaLDQBG1ioHBEyM4zBGaZC1GNR2+8rIXKQp9/Xv38v2eDmqz6YC79B8hmEMEaE3EMTJ9a8javLMgaO24PdJjLD3VreIK+zE+dZbQ+sLtsM9iCXs6NGTenjxcuFsNIy+FL4kM96c3+ZyScgX38' // Include only if the session token exists
-    });
-
-    console.log('AWS SDK configured successfully with secrets from AWS Secrets Manager.');
-  })
-  .catch((err) => {
-    console.error('Error configuring AWS SDK:', err);
-  });
 // Initialize AWS SSM (Parameter Store) and Secrets Manager clients
 const ssm = new AWS.SSM();
+const secretsManager = new AWS.SecretsManager();
 
 // Function to retrieve a parameter from Parameter Store
 async function getParameter(parameterName) {
