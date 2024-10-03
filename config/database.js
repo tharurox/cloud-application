@@ -2,10 +2,10 @@ const mysql = require('mysql2');
 const AWS = require('aws-sdk');
 require('dotenv').config();
 AWS.config.update({
-  accessKeyId: 'ASIA5DYSEEJ4WT2J5PHM', // Use your AWS access key here
-    secretAccessKey: 'OGAjfUDjcQ1awpkkYNB+vRA38RpZI9RZ9dIiNKZf', // Use your AWS secret key here
-    region: 'ap-southeast-2', // The region where your bucket is located
-    sessionToken  : 'IQoJb3JpZ2luX2VjEFYaDmFwLXNvdXRoZWFzdC0yIkcwRQIgEvuMejNGLNOpuvoCtxwsx8I2y0yDskPm5oUiDWAmnHsCIQCaOL/DDCe/mCeRc9NuNSBlJHoK+f/NIEv5Xmj2ysIpuSquAwif//////////8BEAMaDDkwMTQ0NDI4MDk1MyIMJd0TzO9yPAS+aEHQKoIDYuReFgMTignFK8lOpnLMnwkUjJh7XoEV6CfaduLpm4NNCDil1fz+ezxOqIhw12Djgf6N/Zr0yyys3EGr95t6/FxvRQSZ0caTB9dkexVmvBnK7BXWlYhHyhpXcsY3lTast1J4pALIHaTZGiZeQ+C/pyA3bswbg9mLMaOK6ka0Kl4VMuhjdRQLsGmkG6dtjNW38Jf2x8qF2rWcbiB6Ewk++F3ilI+IKt7JBy296qfvLTpAntbygIb28m7QV9xnOVeN12+NOG4moVg8Td16FVYsablCXKKiu4T/PAPbFRGgCRKSQBqgwjrzxASsOmufn6o0xoN2xN5UuAmNdtvCpDF39hXJ8+Ke9fYX64imxQI7fCQin758hziCJS1CVgnYN9DO5Wj1aLO3H70rRDbe7n208sPWIg4EcIzMXeKznf/RAu9GyQn+9jExGoeAkbsENVvcGI2kKYp0jh6FTFXe4W/XUNtd+tcDqz95iXPZECu0Rl+qN2G0T7daXYk0ObYiT/vfhtEwmMvztwY6pgGd6ZuOOerB1X2Vr3+BYTrjVPaEJTZprKHH/ZPqTAFhiTY2SGfuQ+pjM0yGsWLEWDtMWrUhVNflYsT0TG17QEYiML5jn6CsdyDH+Rw462dZCUn0HJQCHvwbsM1FEaKv8c5rEGgUZhyjON9qdnazIGuYNZ3KAnfawHF6vtjgWvaSgvLCyTJJtOZ7Bk8p2z29WRj0rDZOYaMHVF1E/Ud4G6pfkE4RLlhH'
+  accessKeyId: 'ASIA5DYSEEJ4ULBKWDWH', // Use your AWS access key here
+  secretAccessKey: 'WpjD/C86FScRorAvP0tKf8DaaHpd4mowQYSiNpRR', // Use your AWS secret key here
+  region: 'ap-southeast-2', // The region where your bucket is located
+  sessionToken  : 'IQoJb3JpZ2luX2VjEGkaDmFwLXNvdXRoZWFzdC0yIkgwRgIhAPg6b/aU6mZtSy527TB1bzQ5jn7ySzMUJI0TPSWBjxxGAiEA2PQTcCxxWWpKMulyc1wHGMSifBtbYktwi6e1ubeu4bEqrgMIsv//////////ARADGgw5MDE0NDQyODA5NTMiDAlSD4PpR5BzvzdCyyqCA3OTp5j/9S5I22R7exCP67wEJ5aSR70WDBFVmLiPhBAAJHULDrn6dDpw+WSCYM4HHVgv9+OPr6tIlj2qu1B+2i5fjnnrzRVuHfOJn6PTGjRJFyvBwC3zmdqTsnFBQdSqun3F98m39qG+ZLMBx6pwn586FkyqNaRShq/f4xDOifhJJlcYs9wVrr5A6drtlcVwuaGX9H5O353R2EqHT456hxefQtCKJLMb7Uj0c7X58yokwOiO7ppMmX6NV6sLYIi3aM9cbIabL228anVJiQbG4TbvD12XsIyRg+MHD8r4nKq9xDz4h2LjclndqHA13++bhiBJRPfWHjQLo2r69urbpweRvhaxE33uT7XNU4ky0wAJGfYjVP18nbFP3Rtpwv0F4nEk61Wy6x1ZD9joLDAGAq2U34Hzp6xHHX91RVeMeeK/Wt0yeGLxwyleuqazkydFMgAHMLogmeEsdza6Huissw+9Ka3XpWmTIsz28Aff6l3pVsLjeky/gcJNELqj071w+B8KMJvN97cGOqUBAV2QY/Hq0B0QX1XZbL2kh/3Y09cs31Zaeq1pIG1CFKsAubunumwvuDFni215dFCFtUayvInxCJamkF87U2vV4ZxQFVt22jSKBQmQ43dLodwevgRzGqlV9W7wCKAI8ayHXvI8s1Jf+0yww7EeY/hjFGmS5lDxw7NldPb9T1hbReNheNePXg0kbfons5pXmSYsBqidnHiVDjPqxtqv3AoBbHiVPt/2'
 });
 // Initialize AWS SSM (Parameter Store) and Secrets Manager clients
 const ssm = new AWS.SSM();
