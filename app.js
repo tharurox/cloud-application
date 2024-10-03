@@ -33,14 +33,15 @@ app.use(session({
 const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(GOOGLE_ID);
 
+// Function to verify Google Token using Google OAuth2 Client
 async function verifyGoogleToken(idToken) {
+    const client = new OAuth2Client(GOOGLE_CLIENT_ID);
     const ticket = await client.verifyIdToken({
-        idToken: idToken,
-        audience: GOOGLE_ID,  // Specify the CLIENT_ID of the app that accesses the backend
+      idToken: idToken,
+      audience: GOOGLE_CLIENT_ID
     });
-    const payload = ticket.getPayload();
-    return payload;
-}
+    return ticket.getPayload(); // Return the payload after verification
+  }
 
 
 // Set up flash middleware for flash messages
@@ -58,12 +59,15 @@ passport.use(new GoogleStrategy({
     clientID: GOOGLE_ID,
     clientSecret: Google_secret,
     callbackURL: Google_callback_url,
-    scope: ['openid', 'profile', 'email'],
-  }, (accessToken, refreshToken, profile, done) => {
-    // Pass the accessToken to the user object
+    passReqToCallback: true // Include this to pass `req` and extract the tokens
+  },
+  (req, accessToken, refreshToken, profile, done) => {
+    // Store the tokens in req.user
     profile.accessToken = accessToken;
-    done(null, profile);
-  }));
+    profile.idToken = req.query.id_token || accessToken; // Use id_token if available
+    return done(null, profile);
+  }
+));
 
 passport.serializeUser((user, done) => {
     done(null, user);
@@ -387,68 +391,69 @@ app.get('/auth/google',
     passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
-
+/ Google Callback Route with Proper ID Token Handling
 app.get('/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/login' }),
-    async (req, res) => {
-      // Extract ID token from the user profile or accessToken returned by Google
-      const googleIdToken = req.user.id_token || req.user._json.sub || req.user.accessToken;
-  
-      if (!googleIdToken) {
-        console.error('Missing Google idToken');
-        return res.redirect('/login');
-      }
-  
-      try {
-        // Log the Google user profile to confirm the data received
-        console.log('Google profile:', req.user);
-  
-        // Verify the Google ID token to ensure it's valid (optional step for debugging)
-        const payload = await verifyGoogleToken(googleIdToken); // Assuming verifyGoogleToken is defined elsewhere for validation
-  
-        // If verification is successful, proceed with Cognito integration
-        const params = {
-          IdentityPoolId: 'ap-southeast-2:04b1c923-0159-4f10-a4ed-1b5a9fa53904',
-          Logins: {
-            'accounts.google.com': googleIdToken,
-          },
-        };
-  
-        cognitoIdentity.getId(params, (err, data) => {
-          if (err) {
-            console.error('Error fetching Cognito ID:', err);
-            return res.redirect('/login');
-          }
-  
-          // Log the returned Cognito Identity data for debugging
-          console.log('Cognito Identity ID:', data.IdentityId);
-  
-          // Once identityId is obtained, fetch credentials
-          cognitoIdentity.getCredentialsForIdentity(
-            {
-              IdentityId: data.IdentityId,
-              Logins: params.Logins,
-            },
-            (err, credentials) => {
-              if (err) {
-                console.error('Error fetching Cognito credentials:', err);
-                return res.redirect('/login');
-              }
-  
-              // Store credentials in session and redirect to the home page
-              console.log('Cognito Credentials:', credentials);
-              req.session.credentials = credentials;
-              res.redirect('/trancode'); // Redirect to the home page or desired route after login
-            }
-          );
-        });
-      } catch (error) {
-        console.error('Invalid Google ID token:', error);
-        return res.redirect('/login');
-      }
+  passport.authenticate('google', { failureRedirect: '/login' }),
+  async (req, res) => {
+    const googleIdToken = req.user.idToken || req.query.id_token || req.user.accessToken;
+
+    if (!googleIdToken) {
+      console.error('Missing Google idToken');
+      return res.redirect('/login');
     }
-  );
-  
+
+    try {
+      // Log the Google profile to confirm correct data
+      console.log('Google profile:', req.user);
+
+      // Optional: Verify the Google ID token to ensure it's valid
+      const payload = await verifyGoogleToken(googleIdToken);
+
+      console.log('Verified Google Token Payload:', payload);
+
+      // If verification is successful, proceed with Cognito integration
+      const params = {
+        IdentityPoolId: IDENTITY_POOL_ID,
+        Logins: {
+          'accounts.google.com': googleIdToken,
+        },
+      };
+
+      cognitoIdentity.getId(params, (err, data) => {
+        if (err) {
+          console.error('Error fetching Cognito ID:', err);
+          return res.redirect('/login');
+        }
+
+        console.log('Cognito Identity ID:', data.IdentityId);
+
+        // Once identityId is obtained, fetch credentials
+        cognitoIdentity.getCredentialsForIdentity(
+          {
+            IdentityId: data.IdentityId,
+            Logins: params.Logins,
+          },
+          (err, credentials) => {
+            if (err) {
+              console.error('Error fetching Cognito credentials:', err);
+              return res.redirect('/login');
+            }
+
+            // Store credentials in session and redirect to the home page
+            console.log('Cognito Credentials:', credentials);
+            req.session.credentials = credentials;
+            res.redirect('/trancode'); // Redirect to the home page or desired route after login
+          }
+        );
+      });
+    } catch (error) {
+      console.error('Invalid Google ID token:', error);
+      return res.redirect('/login');
+    }
+  }
+);
+
+
 // Logout route
 app.get('/logout', (req, res) => {
     req.session.destroy((err) => {
