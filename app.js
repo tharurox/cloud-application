@@ -33,13 +33,11 @@ app.use(session({
 const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(GOOGLE_ID);
 
-async function verifyGoogleToken(idToken) {
-    const ticket = await client.verifyIdToken({
-        idToken: idToken,
-        audience: GOOGLE_ID,  // Specify the CLIENT_ID of the app that accesses the backend
+function verifyGoogleToken(token) {
+    return client.verifyIdToken({
+        idToken: token,
+        audience: GOOGLE_ID, // Specify the CLIENT_ID of the app that accesses the backend
     });
-    const payload = ticket.getPayload();
-    return payload;
 }
 
 
@@ -386,16 +384,11 @@ const cognitoIdentity = new AWS.CognitoIdentity();
 app.get('/auth/google',
     passport.authenticate('google', { scope: ['profile', 'email'] })
 );
-
 app.get('/auth/google/callback',
     passport.authenticate('google', { failureRedirect: '/login' }),
     async (req, res) => {
-        // Log the entire profile to verify what is returned by Google
-        console.log('Google Profile:', req.user);
-
-        // Extract the ID token correctly
-        // Google does not return `idToken` directly in the profile object, so use accessToken or another property
-        const googleIdToken = req.user.accessToken;
+        // Extract ID token directly from the profile object
+        const googleIdToken = req.user?.idToken || req.authInfo?.id_token || req.user?.accessToken;
 
         if (!googleIdToken || googleIdToken.split('.').length !== 3) {
             console.error('Missing or invalid Google idToken');
@@ -403,7 +396,10 @@ app.get('/auth/google/callback',
         }
 
         try {
-            // Verify the Google ID token (if necessary)
+            // Log the Google user profile to confirm the data received
+            console.log('Google Profile:', req.user);
+
+            // Verify the Google ID token to ensure it's valid
             const payload = await verifyGoogleToken(googleIdToken);
             console.log('Verified Google Token Payload:', payload);
 
@@ -411,7 +407,7 @@ app.get('/auth/google/callback',
             const params = {
                 IdentityPoolId: 'ap-southeast-2:04b1c923-0159-4f10-a4ed-1b5a9fa53904',
                 Logins: {
-                    'accounts.google.com': googleIdToken,  // Use Google ID token for Cognito identity
+                    'accounts.google.com': googleIdToken,
                 },
             };
 
@@ -438,7 +434,7 @@ app.get('/auth/google/callback',
                         // Store credentials in session and redirect to the home page
                         console.log('Cognito Credentials:', credentials);
                         req.session.credentials = credentials;
-                        res.redirect('/');  // Redirect to the desired route after login
+                        res.redirect('/trancode'); // Redirect to the home page or desired route after login
                     }
                 );
             });
@@ -448,7 +444,6 @@ app.get('/auth/google/callback',
         }
     }
 );
-
   
 // Logout route
 app.get('/logout', (req, res) => {
