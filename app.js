@@ -15,6 +15,8 @@ const app = express();
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
+require('dotenv').config();
+
 const port = 3000;
 const GOOGLE_ID = "909473958500-h7qm6q6mpfkldnrb5b27iqdggtm87ek6.apps.googleusercontent.com";
 const Google_secret = "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";
@@ -130,10 +132,10 @@ const { v4: uuidv4 } = require('uuid'); // For unique file names
 
 // Set up S3 with your credentials and region
 const s3 = new AWS.S3({
-    accessKeyId: 'ASIA5DYSEEJ4ULBKWDWH', // Use your AWS access key here
-    secretAccessKey: 'WpjD/C86FScRorAvP0tKf8DaaHpd4mowQYSiNpRR', // Use your AWS secret key here
-    region: 'ap-southeast-2', // The region where your bucket is located
-    sessionToken  : 'IQoJb3JpZ2luX2VjEGkaDmFwLXNvdXRoZWFzdC0yIkgwRgIhAPg6b/aU6mZtSy527TB1bzQ5jn7ySzMUJI0TPSWBjxxGAiEA2PQTcCxxWWpKMulyc1wHGMSifBtbYktwi6e1ubeu4bEqrgMIsv//////////ARADGgw5MDE0NDQyODA5NTMiDAlSD4PpR5BzvzdCyyqCA3OTp5j/9S5I22R7exCP67wEJ5aSR70WDBFVmLiPhBAAJHULDrn6dDpw+WSCYM4HHVgv9+OPr6tIlj2qu1B+2i5fjnnrzRVuHfOJn6PTGjRJFyvBwC3zmdqTsnFBQdSqun3F98m39qG+ZLMBx6pwn586FkyqNaRShq/f4xDOifhJJlcYs9wVrr5A6drtlcVwuaGX9H5O353R2EqHT456hxefQtCKJLMb7Uj0c7X58yokwOiO7ppMmX6NV6sLYIi3aM9cbIabL228anVJiQbG4TbvD12XsIyRg+MHD8r4nKq9xDz4h2LjclndqHA13++bhiBJRPfWHjQLo2r69urbpweRvhaxE33uT7XNU4ky0wAJGfYjVP18nbFP3Rtpwv0F4nEk61Wy6x1ZD9joLDAGAq2U34Hzp6xHHX91RVeMeeK/Wt0yeGLxwyleuqazkydFMgAHMLogmeEsdza6Huissw+9Ka3XpWmTIsz28Aff6l3pVsLjeky/gcJNELqj071w+B8KMJvN97cGOqUBAV2QY/Hq0B0QX1XZbL2kh/3Y09cs31Zaeq1pIG1CFKsAubunumwvuDFni215dFCFtUayvInxCJamkF87U2vV4ZxQFVt22jSKBQmQ43dLodwevgRzGqlV9W7wCKAI8ayHXvI8s1Jf+0yww7EeY/hjFGmS5lDxw7NldPb9T1hbReNheNePXg0kbfons5pXmSYsBqidnHiVDjPqxtqv3AoBbHiVPt/2'
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
+  sessionToken: process.env.AWS_SESSION_TOKEN
 });
 
 const ASSEMBLYAI_API_KEY = 'f6ac0ab5e04141dca16baf2571bc8c5a'; // Replace with your AssemblyAI API key
