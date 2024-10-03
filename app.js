@@ -30,6 +30,17 @@ app.use(session({
     cookie: { secure: false } // Set secure to true if using HTTPS
 }));
 
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(GOOGLE_ID);
+
+async function verifyGoogleToken(idToken) {
+    const ticket = await client.verifyIdToken({
+        idToken: idToken,
+        audience: GOOGLE_ID,  // Specify the CLIENT_ID of the app that accesses the backend
+    });
+    const payload = ticket.getPayload();
+    return payload;
+}
 
 
 // Set up flash middleware for flash messages
@@ -375,48 +386,51 @@ app.get('/auth/google',
     passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
-// Google callback route
 app.get('/auth/google/callback',
     passport.authenticate('google', { failureRedirect: '/login' }),
-    (req, res) => {
-        // The Google profile will be available in req.user
-        const googleIdToken = req.user.idToken || req.user._json.sub; // Ensure proper access to the idToken
+    async (req, res) => {
+        const googleIdToken = req.user.idToken;
 
-        // Check if googleIdToken is present
         if (!googleIdToken) {
             console.error('Missing Google idToken');
-            return res.redirect('/');
+            return res.redirect('/login');
         }
 
-        const params = {
-            IdentityPoolId: 'ap-southeast-2:04b1c923-0159-4f10-a4ed-1b5a9fa53904',  // Your Cognito Identity Pool Id
-            Logins: {
-                'accounts.google.com': googleIdToken // Use Google idToken for Cognito identity federation
-            }
-        };
+        try {
+            // Verify the Google ID token
+            const payload = await verifyGoogleToken(googleIdToken);
 
-        // Call Cognito Identity service to get an identityId
-        cognitoIdentity.getId(params, (err, data) => {
-            if (err) {
-                console.error('Error fetching Cognito ID:', err);
-                return res.redirect('/login');
-            }
+            // If verification is successful, proceed with Cognito integration
+            const params = {
+                IdentityPoolId: 'ap-southeast-2:04b1c923-0159-4f10-a4ed-1b5a9fa53904',
+                Logins: {
+                    'accounts.google.com': googleIdToken
+                }
+            };
 
-            // Once identityId is obtained, fetch credentials
-            cognitoIdentity.getCredentialsForIdentity({
-                IdentityId: data.IdentityId,
-                Logins: params.Logins
-            }, (err, credentials) => {
+            cognitoIdentity.getId(params, (err, data) => {
                 if (err) {
-                    console.error('Error fetching Cognito credentials:', err);
+                    console.error('Error fetching Cognito ID:', err);
                     return res.redirect('/login');
                 }
 
-                // Store credentials in session and redirect to the home page
-                req.session.credentials = credentials;
-                res.redirect('/');
+                cognitoIdentity.getCredentialsForIdentity({
+                    IdentityId: data.IdentityId,
+                    Logins: params.Logins
+                }, (err, credentials) => {
+                    if (err) {
+                        console.error('Error fetching Cognito credentials:', err);
+                        return res.redirect('/login');
+                    }
+
+                    req.session.credentials = credentials;
+                    res.redirect('/trancode');
+                });
             });
-        });
+        } catch (error) {
+            console.error('Invalid Google ID token:', error);
+            return res.redirect('/login');
+        }
     }
 );
 
