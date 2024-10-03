@@ -198,24 +198,43 @@ function cognitoLogin(username, password, req, res) {
     cognitoUser.authenticateUser(authDetails, {
         onSuccess: (result) => {
             const idToken = result.getIdToken().getJwtToken();
-            req.session.user = jwt.decode(idToken);
+            const accessToken = result.getAccessToken().getJwtToken();
+            const refreshToken = result.getRefreshToken().getToken();
+
+            // Decode the ID Token to get user info
+            const decodedToken = jwt.decode(idToken);
+
+            console.log('Successfully authenticated with Cognito.');
+            console.log('User Info:', decodedToken);
+
+            // Store tokens and user details in session
+            req.session.user = decodedToken;
+            req.session.tokens = {
+                idToken,
+                accessToken,
+                refreshToken
+            };
+
+            req.flash('success_msg', 'You are now logged in.');
             res.redirect('/');
         },
         onFailure: (err) => {
+            console.error('Authentication failed:', err.message);
             req.flash('error_msg', `Authentication failed: ${err.message}`);
             res.redirect('/login');
         },
-        newPasswordRequired: (userAttributes, requiredAttributes, session) => {
+        newPasswordRequired: (userAttributes, requiredAttributes) => {
             req.session.userAttributes = userAttributes;
             req.session.requiredAttributes = requiredAttributes;
-            req.session.cognitoSession = session;
             req.session.username = username;
             req.session.password = password;
+
             req.flash('success_msg', 'You need to change your password.');
             res.redirect('/change-password');
         }
     });
 }
+
 
 app.get('/change-password', (req, res) => {
     if (!req.session.username || !req.session.cognitoSession) {
@@ -385,7 +404,7 @@ const cognitoIdentity = new AWS.CognitoIdentity();
 // Google authentication route with required scope
 app.get('/auth/google',
     passport.authenticate('google', { scope: ['profile', 'email'] })
-    
+
 );
 app.get('/auth/google/callback',
     passport.authenticate('google', { failureRedirect: '/login' }),
