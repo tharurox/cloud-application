@@ -216,7 +216,7 @@ function cognitoLogin(username, password, req, res) {
             };
 
             req.flash('success_msg', 'You are now logged in.');
-            res.redirect('/');
+            res.render('index');
         },
         onFailure: (err) => {
             console.error('Authentication failed:', err.message);
