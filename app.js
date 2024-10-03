@@ -110,8 +110,8 @@ app.use(passport.session());
 
 // AWS Cognito Pool Info
 const poolData = {
-    UserPoolId: 'ap-southeast-2_I9D8Pcsv0',
-    ClientId: '6jh4jpfupkuu2nq3elp8rhc147'
+    UserPoolId: 'ap-southeast-2_Up85TT9kx',
+    ClientId: '3jlv0og5l1mkjnq1tdb7bg3ini'
 };
 const userPool = new CognitoUserPool(poolData);
 
