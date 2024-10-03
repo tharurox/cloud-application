@@ -27,7 +27,7 @@ getAwsSecrets(secretName)
     AWS.config.update({
       accessKeyId: secrets.accessKeyId,
       secretAccessKey: secrets.secretAccessKey,
-      region: "ap-southeast-2",
+      region: secrets.region,
       sessionToken: secrets.sessionToken // Include only if the session token exists
     });
 

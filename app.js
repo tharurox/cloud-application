@@ -43,10 +43,10 @@ getSecrets(secretName).then(secrets => {
     accessKeyId: secrets.accessKeyId,
     secretAccessKey: secrets.secretAccessKey,
     sessionToken: secrets.sessionToken, // Include if you have a session token
-    region:"ap-souteast-2"
+    region: secrets.region
   });
 
-  
+
   console.log('S3 client configured successfully!');
 }).catch(err => {
   console.error('Failed to configure S3 client:', err);
@@ -59,13 +59,21 @@ const Google_secret = "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";
 const Google_callback_url="http://n11849622.cab432.com:3000/auth/google/callback";
 
 // Set up session management
-app.use(session({
-    secret: 'IQoJb3JpZ2luX2VjEFYaDmFwLXNvdXRoZWFzdC0yIkcwRQIgEvuMejNGLNOpuvoCtxwsx8I2y0yDskPm5oUiDWAmnHsCIQCaOL/DDCe/mCeRc9NuNSBlJHoK+f/NIEv5Xmj2ysIpuSquAwif//////////8BEAMaDDkwMTQ0NDI4MDk1MyIMJd0TzO9yPAS+aEHQKoIDYuReFgMTignFK8lOpnLMnwkUjJh7XoEV6CfaduLpm4NNCDil1fz+ezxOqIhw12Djgf6N/Zr0yyys3EGr95t6/FxvRQSZ0caTB9dkexVmvBnK7BXWlYhHyhpXcsY3lTast1J4pALIHaTZGiZeQ+C/pyA3bswbg9mLMaOK6ka0Kl4VMuhjdRQLsGmkG6dtjNW38Jf2x8qF2rWcbiB6Ewk++F3ilI+IKt7JBy296qfvLTpAntbygIb28m7QV9xnOVeN12+NOG4moVg8Td16FVYsablCXKKiu4T/PAPbFRGgCRKSQBqgwjrzxASsOmufn6o0xoN2xN5UuAmNdtvCpDF39hXJ8+Ke9fYX64imxQI7fCQin758hziCJS1CVgnYN9DO5Wj1aLO3H70rRDbe7n208sPWIg4EcIzMXeKznf/RAu9GyQn+9jExGoeAkbsENVvcGI2kKYp0jh6FTFXe4W/XUNtd+tcDqz95iXPZECu0Rl+qN2G0T7daXYk0ObYiT/vfhtEwmMvztwY6pgGd6ZuOOerB1X2Vr3+BYTrjVPaEJTZprKHH/ZPqTAFhiTY2SGfuQ+pjM0yGsWLEWDtMWrUhVNflYsT0TG17QEYiML5jn6CsdyDH+Rw462dZCUn0HJQCHvwbsM1FEaKv8c5rEGgUZhyjON9qdnazIGuYNZ3KAnfawHF6vtjgWvaSgvLCyTJJtOZ7Bk8p2z29WRj0rDZOYaMHVF1E/Ud4G6pfkE4RLlhH', // Replace with your own secret key
-    resave: false, // Don't save the session if it's not modified
-    saveUninitialized: false, // Don't create session until something is stored
-    cookie: { secure: false } // Set secure to true if using HTTPS
-}));
+getSessionSecret(secretName)
+  .then((sessionSecret) => {
+    // Use the retrieved session secret in the session configuration
+    app.use(session({
+      secret: sessionSecret.sessionToken, // Use the secret value from Secrets Manager
+      resave: false,         // Don't save the session if it's not modified
+      saveUninitialized: false, // Don't create session until something is stored
+      cookie: { secure: false } // Set secure to true if using HTTPS
+    }));
 
+    console.log('Session configured successfully with secret from AWS Secrets Manager.');
+  })
+  .catch((err) => {
+    console.error('Failed to configure session:', err);
+  });
 const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(GOOGLE_ID);
 
