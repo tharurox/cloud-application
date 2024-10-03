@@ -2,6 +2,9 @@ const mysql = require('mysql2');
 const AWS = require('aws-sdk');
 // Create a Secrets Manager client
 const secretsManager = new AWS.SecretsManager({ region: 'ap-southeast-2' }); // Replace with your region
+AWS.config.update({
+  region: 'ap-southeast-2'
+});
 
 // Function to get AWS credentials from Secrets Manager
 const getAwsSecrets = async (secretName) => {
