@@ -17,6 +17,42 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
 require('dotenv').config();
 
+
+const secretsManager = new AWS.SecretsManager({ region: process.env.AWS_REGION });
+
+// Function to get secrets from Secrets Manager
+const getSecrets = async (secretName) => {
+  try {
+    const secretValue = await secretsManager.getSecretValue({ SecretId: secretName }).promise();
+
+    if ('SecretString' in secretValue) {
+      return JSON.parse(secretValue.SecretString);
+    }
+    throw new Error(`Secret ${secretName} does not contain a valid SecretString.`);
+  } catch (err) {
+    console.error('Error retrieving secret from Secrets Manager:', err);
+    throw err;
+  }
+};
+
+// Retrieve the secret and configure the S3 client
+const secretName = '/n11849622/app';
+
+getSecrets(secretName).then(secrets => {
+  const s3 = new AWS.S3({
+    accessKeyId: secrets.accessKeyId,
+    secretAccessKey: secrets.secretAccessKey,
+    sessionToken: secrets.sessionToken, // Include if you have a session token
+    region:"ap-souteast-2"
+  });
+
+  
+  console.log('S3 client configured successfully!');
+}).catch(err => {
+  console.error('Failed to configure S3 client:', err);
+});
+
+
 const port = 3000;
 const GOOGLE_ID = "909473958500-h7qm6q6mpfkldnrb5b27iqdggtm87ek6.apps.googleusercontent.com";
 const Google_secret = "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";
@@ -142,14 +178,6 @@ app.use(passport.session());
 
 
 const { v4: uuidv4 } = require('uuid'); // For unique file names
-
-// Set up S3 with your credentials and region
-const s3 = new AWS.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION,
-  sessionToken: process.env.AWS_SESSION_TOKEN
-});
 
 const ASSEMBLYAI_API_KEY = 'f6ac0ab5e04141dca16baf2571bc8c5a'; // Replace with your AssemblyAI API key
 

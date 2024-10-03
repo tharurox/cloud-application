@@ -1,16 +1,50 @@
 const mysql = require('mysql2');
 const AWS = require('aws-sdk');
-require('dotenv').config();
+// Create a Secrets Manager client
+const secretsManager = new AWS.SecretsManager({ region: 'ap-southeast-2' }); // Replace with your region
 
-AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION,
-  sessionToken: process.env.AWS_SESSION_TOKEN
-});
+// Function to get AWS credentials from Secrets Manager
+const getAwsSecrets = async (secretName) => {
+  try {
+    const secretValue = await secretsManager.getSecretValue({ SecretId: secretName }).promise();
+
+    if ('SecretString' in secretValue) {
+      return JSON.parse(secretValue.SecretString);
+    }
+    throw new Error(`Secret ${secretName} does not contain a valid SecretString.`);
+  } catch (err) {
+    console.error('Failed to retrieve secret from Secrets Manager:', err);
+    throw err;
+  }
+};
+
+// Define the secret name (use the same name you set in Secrets Manager)
+const secretName = '/n11849622/app';
+
+getAwsSecrets(secretName)
+  .then((secrets) => {
+    // Use secrets to configure the AWS SDK
+    AWS.config.update({
+      accessKeyId: secrets.accessKeyId,
+      secretAccessKey: secrets.secretAccessKey,
+      region: "ap-southeast-2",
+      sessionToken: secrets.sessionToken // Include only if the session token exists
+    });
+
+    console.log('AWS SDK configured successfully with secrets from AWS Secrets Manager.');
+
+    // Example: List all S3 buckets to verify the configuration
+    const s3 = new AWS.S3();
+    s3.listBuckets((err, data) => {
+      if (err) console.error('Error listing S3 buckets:', err);
+      else console.log('S3 Buckets:', data.Buckets);
+    });
+  })
+  .catch((err) => {
+    console.error('Error configuring AWS SDK:', err);
+  });
 // Initialize AWS SSM (Parameter Store) and Secrets Manager clients
 const ssm = new AWS.SSM();
-const secretsManager = new AWS.SecretsManager();
 
 // Function to retrieve a parameter from Parameter Store
 async function getParameter(parameterName) {
