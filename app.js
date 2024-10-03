@@ -17,51 +17,6 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
 require('dotenv').config();
 
-const ssm = new AWS.SSM({ region: process.env.AWS_REGION });
-
-// Define the SSM parameter names
-const parameterNames = [
-    '/n11849622/app/accessKeyId',
-    'n11849622/app/secretAccessKey',
-    '/n11849622/app/region',
-    '/n11849622/app/sessionToken'
-  ];
-  
- // Create a function to retrieve the parameters from SSM
-const getSSMParameters = async () => {
-    const params = {
-      Names: parameterNames,
-      WithDecryption: true, // Set to true for SecureString parameters
-    };
-  
-    try {
-      const response = await ssm.getParameters(params).promise();
-      const parameterMap = {};
-      
-      // Map parameters to a key-value object
-      response.Parameters.forEach(param => {
-        const paramName = param.Name.split('/').pop(); // Get the last part of the name
-        parameterMap[paramName] = param.Value;
-      });
-  
-      return parameterMap;
-    } catch (error) {
-      console.error('Error retrieving parameters from SSM:', error);
-      throw error;
-    }
-  };
-
-
-  // Retrieve SSM parameters and configure the S3 client
-getSSMParameters().then(ssmParams => {
-    const s3 = new AWS.S3({
-      accessKeyId: ssmParams.accessKeyId,
-      secretAccessKey: ssmParams.secretAccessKey,
-      region: ssmParams.region,
-      sessionToken: ssmParams.sessionToken
-});
-  
-
 const port = 3000;
 const GOOGLE_ID = "909473958500-h7qm6q6mpfkldnrb5b27iqdggtm87ek6.apps.googleusercontent.com";
 const Google_secret = "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";
