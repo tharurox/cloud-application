@@ -35,13 +35,6 @@ getAwsSecrets(secretName)
     });
 
     console.log('AWS SDK configured successfully with secrets from AWS Secrets Manager.');
-
-    // Example: List all S3 buckets to verify the configuration
-    const s3 = new AWS.S3();
-    s3.listBuckets((err, data) => {
-      if (err) console.error('Error listing S3 buckets:', err);
-      else console.log('S3 Buckets:', data.Buckets);
-    });
   })
   .catch((err) => {
     console.error('Error configuring AWS SDK:', err);
