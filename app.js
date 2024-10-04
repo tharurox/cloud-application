@@ -6,6 +6,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const axios = require('axios');
 const { CognitoUserPool, CognitoUserAttribute, CognitoUser, AuthenticationDetails } = require('amazon-cognito-identity-js');
 const AWS = require('aws-sdk');
+const ssm = new AWS.SSM({ region: 'ap-southeast-2' });
 const jwt = require('jsonwebtoken');
 const flash = require('connect-flash');
 const { spawn } = require('child_process');
