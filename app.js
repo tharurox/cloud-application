@@ -56,7 +56,7 @@ async function getParameter(paramName, withDecryption = false) {
         '/app/Google_callback_url'
       ];
   
-      const secrets = await getParameters(parameterNames);
+      const secrets = await getParameters(parameterNames);    
   
       // Assign the values
       const GOOGLE_ID = secrets['/app/GOOGLE_ID'];
