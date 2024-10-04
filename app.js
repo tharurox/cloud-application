@@ -23,6 +23,7 @@ require('dotenv').config();
 //const Google_secret = "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";
 //const Google_callback_url="http://n11849622.cab432.com:3000/auth/google/callback";
 
+
 // Helper function to get a single parameter value
 async function getParameter(paramName, withDecryption = false) {
     const params = {
@@ -56,32 +57,33 @@ async function getParameter(paramName, withDecryption = false) {
         '/app/Google_callback_url'
       ];
   
-      const secrets = await getParameters(parameterNames);    
+      // Retrieve the parameters and assign to the `secrets` object
+      const secrets = await getParameters(parameterNames);
   
-      // Assign the values
-      const GOOGLE_ID = secrets['/app/GOOGLE_ID'];
-      const Google_secret = secrets['/app/Google_secret'];
-      const Google_callback_url = secrets['/app/Google_callback_url'];
+      // Assign the values to environment variables
+      process.env.GOOGLE_ID = secrets['/app/GOOGLE_ID'];
+      process.env.Google_secret = secrets['/app/Google_secret'];
+      process.env.Google_callback_url = secrets['/app/Google_callback_url'];
   
-      // Use these values in your OAuth configuration or application setup
-      console.log('Google ID:', GOOGLE_ID);
-      console.log('Google Secret:', Google_secret);
-      console.log('Google Callback URL:', Google_callback_url);
+      // Log values for confirmation (optional)
+      console.log('Google ID:', process.env.GOOGLE_ID);
+      console.log('Google Secret:', process.env.Google_secret);
+      console.log('Google Callback URL:', process.env.Google_callback_url);
+  
+      // Use these environment variables in your application
+      const GOOGLE_ID = process.env.GOOGLE_ID;
+      const Google_secret = process.env.Google_secret;
+      const Google_callback_url = process.env.Google_callback_url;
+  
+      // Example usage
+      console.log('GOOGLE_ID:', GOOGLE_ID);
+      console.log('Google_secret:', Google_secret);
+      console.log('Google_callback_url:', Google_callback_url);
   
     } catch (err) {
       console.error('Error fetching parameters:', err);
     }
   })();
-
-
-process.env.GOOGLE_ID = secrets['/app/GOOGLE_ID'];
-process.env.Google_secret = secrets['/app/Google_secret'];
-process.env.Google_callback_url = secrets['/app/Google_callback_url'];
-
-
-const GOOGLE_ID = process.env.GOOGLE_ID
-const Google_secret = process.env.Google_secret
-const Google_callback_url = process.env.Google_callback_url
 
 
 // Set up session management
