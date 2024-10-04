@@ -52,18 +52,18 @@ async function getParameter(paramName, withDecryption = false) {
   (async () => {
     try {
       const parameterNames = [
-        '/app/GOOGLE_ID',
-        '/app/Google_secret',
-        '/app/Google_callback_url'
+        '/n11849622/GOOGLE_ID',
+        '/n11849622/Google_secret',
+        '/n11849622/Google_callback_url'
       ];
   
       // Retrieve the parameters and assign to the `secrets` object
       const secrets = await getParameters(parameterNames);
   
       // Assign the values to environment variables
-      process.env.GOOGLE_ID = secrets['/app/GOOGLE_ID'];
-      process.env.Google_secret = secrets['/app/Google_secret'];
-      process.env.Google_callback_url = secrets['/app/Google_callback_url'];
+      process.env.GOOGLE_ID = secrets['/n11849622/Google_ID'];
+      process.env.Google_secret = secrets['/n11849622/Google_secret'];
+      process.env.Google_callback_url = secrets['/n11849622/Google_callback_url'];
   
       // Log values for confirmation (optional)
       console.log('Google ID:', process.env.GOOGLE_ID);
