@@ -37,14 +37,10 @@ async function getSecret(secretName) {
 (async () => {
   try {
     const secretValues = await getSecret('/n11849622/app');
-    const GOOGLE_ID = secretValues.GOOGLE_ID;
+    const GOOGLE_ID_val = secretValues.GOOGLE_ID;
     const Google_secret = secretValues.Google_secret;
     const Google_callback_url = secretValues.Google_callback_url;
-
-    console.log('Google ID:', GOOGLE_ID);
-    console.log('Google Secret:', Google_secret);
-    console.log('Google Callback URL:', Google_callback_url);
-
+    const ASSEMBLYAI_API_KEY = secretValues.ASSEMBLYAI_API_KEY
     // Use these variables in your OAuth configuration
   } catch (err) {
     console.error('Error:', err);
@@ -184,7 +180,7 @@ const s3 = new AWS.S3({
   sessionToken: process.env.AWS_SESSION_TOKEN
 });
 
-const ASSEMBLYAI_API_KEY = 'f6ac0ab5e04141dca16baf2571bc8c5a'; // Replace with your AssemblyAI API key
+const ASSEMBLYAI_API_KEY = secretValues.ASSEMBLYAI_API_KEY; // Replace with your AssemblyAI API key
 
 // Set EJS as the template engine
 app.set('view engine', 'ejs');
