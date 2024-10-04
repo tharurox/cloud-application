@@ -18,44 +18,10 @@ const session = require('express-session');
 require('dotenv').config();
 
 
-const secretsManager = new AWS.SecretsManager({ region: 'us-east-1' }); // Replace with your region
-
-async function getSecretValues() {
-  try {
-    const secretValues = await secretsManager.getSecretValue({ SecretId: '/n11849622/app' }).promise();
-    return JSON.parse(secretValues.SecretString);
-  } catch (err) {
-    console.error('Error fetching secrets:', err);
-    throw err;
-  }
-}
-
-// Usage Example
-(async () => {
-  try {
-    const secretValues = await getSecretValues();
-    const GOOGLE_ID = secretValues.GOOGLE_ID;
-    const Google_secret = secretValues.Google_secret;
-    const Google_callback_url = secretValues.Google_callback_url;
-    const ASSEMBLYAI_API_KEY_val = secretValues.ASSEMBLYAI_API_KEY;
-
-    // Use these values as needed
-    console.log('Google ID:', GOOGLE_ID);
-    console.log('Google Secret:', Google_secret);
-    console.log('Google Callback URL:', Google_callback_url);
-    console.log('AssemblyAI API Key:', ASSEMBLYAI_API_KEY_val);
-  } catch (err) {
-    console.error('Error:', err);
-  }
-})();
-
-// Now you can access these variables elsewhere in the code
-setTimeout(() => {
-  console.log('Google ID (global):', GOOGLE_ID);
-}, 1000); // Example of using the global variables after they are set
-
-
-
+const port = 3000;
+const GOOGLE_ID = "909473958500-h7qm6q6mpfkldnrb5b27iqdggtm87ek6.apps.googleusercontent.com";
+const Google_secret = "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";
+const Google_callback_url="http://n11849622.cab432.com:3000/auth/google/callback";
 
 // Set up session management
 app.use(session({
@@ -186,7 +152,7 @@ const s3 = new AWS.S3({
   sessionToken: process.env.AWS_SESSION_TOKEN
 });
 
-const ASSEMBLYAI_API_KEY = ASSEMBLYAI_API_KEY_val; // Replace with your AssemblyAI API key
+const ASSEMBLYAI_API_KEY = 'f6ac0ab5e04141dca16baf2571bc8c5a'; // Replace with your AssemblyAI API key
 
 // Set EJS as the template engine
 app.set('view engine', 'ejs');
