@@ -92,13 +92,6 @@
     <div class="container">
         <h1>Register</h1>
 
-        <% if (error_msg) { %>
-            <div class="alert alert-danger"><%= error_msg %></div>
-        <% } %>
-        <% if (success_msg) { %>
-            <div class="alert alert-success"><%= success_msg %></div>
-        <% } %>
-
         <form action="/register" method="POST">
             <div class="form-group">
                 <label for="username">Email:</label>

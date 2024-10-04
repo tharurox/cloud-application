@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Launch an EC2 instance from a specified launch template
+Description: Launch an EC2 instance and mount an EFS volume.
 
 Parameters:
   LaunchTemplateId:
@@ -8,20 +8,91 @@ Parameters:
     Description: The ID of the launch template to use for creating the EC2 instance.
 
 Resources:
+  
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable NFS access to the EFS file system
+      VpcId: vpc-007bab53289655834
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: EC2SecurityGroup
+
+  
+  EFSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for EFS Mount Target
+      VpcId: vpc-007bab53289655834
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: sg-078997505ad1c6bbc
+      Tags:
+        - Key: Name
+          Value: EFSSecurityGroup
+
+  
   EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
       LaunchTemplate:
         LaunchTemplateId: !Ref LaunchTemplateId
         Version: '$Latest'
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
       Tags:
         - Key: Name
           Value: EC2InstanceFromLaunchTemplate
+
+
+  EFSFileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      FileSystemTags:
+        - Key: Name
+          Value: MyEFS
+
+
+  MountTarget:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SubnetId: subnet-0026e52a1cdb7b226
+      SecurityGroups:
+        - sg-078997505ad1c6bbc
+
+
+  MountEFSScript:
+    Type: AWS::EC2::Instance
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: lt-028e3170490de39c7
+        Version: '$Latest'
+      SecurityGroupIds:
+        - sg-0a229f92b415680dd
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum install -y amazon-efs-utils
+          mkdir /mnt/efs
+          mount -t efs fs-0d35fb5de71e4ff67:/ /mnt/efs
 
 Outputs:
   InstanceId:
     Description: The Instance ID of the launched EC2 instance.
     Value: !Ref EC2Instance
+
   PublicIP:
     Description: The public IP address of the launched EC2 instance.
     Value: !GetAtt EC2Instance.PublicIp
+
+  EFSFileSystemId:
+    Description: The ID of the EFS file system.
+    Value: !Ref EFSFileSystem
