@@ -59,6 +59,22 @@ async function getParameters(parameterNames) {
     }
   }
   
+  // Ensure secrets are loaded before proceeding with the main application logic
+  (async () => {
+    await loadSecrets();
+  
+    // Now you can access these variables in your application
+    const GOOGLE_ID = process.env.GOOGLE_ID;
+    const Google_secret = process.env.Google_secret;
+    const Google_callback_url = process.env.Google_callback_url;
+  
+    // Example usage
+    console.log('Google ID:', GOOGLE_ID);
+    console.log('Google Secret:', Google_secret);
+    console.log('Google Callback URL:', Google_callback_url);
+  
+    // Your main application code goes here
+  
 // Set up session management
 app.use(session({
     secret: 'IQoJb3JpZ2luX2VjEFYaDmFwLXNvdXRoZWFzdC0yIkcwRQIgEvuMejNGLNOpuvoCtxwsx8I2y0yDskPm5oUiDWAmnHsCIQCaOL/DDCe/mCeRc9NuNSBlJHoK+f/NIEv5Xmj2ysIpuSquAwif//////////8BEAMaDDkwMTQ0NDI4MDk1MyIMJd0TzO9yPAS+aEHQKoIDYuReFgMTignFK8lOpnLMnwkUjJh7XoEV6CfaduLpm4NNCDil1fz+ezxOqIhw12Djgf6N/Zr0yyys3EGr95t6/FxvRQSZ0caTB9dkexVmvBnK7BXWlYhHyhpXcsY3lTast1J4pALIHaTZGiZeQ+C/pyA3bswbg9mLMaOK6ka0Kl4VMuhjdRQLsGmkG6dtjNW38Jf2x8qF2rWcbiB6Ewk++F3ilI+IKt7JBy296qfvLTpAntbygIb28m7QV9xnOVeN12+NOG4moVg8Td16FVYsablCXKKiu4T/PAPbFRGgCRKSQBqgwjrzxASsOmufn6o0xoN2xN5UuAmNdtvCpDF39hXJ8+Ke9fYX64imxQI7fCQin758hziCJS1CVgnYN9DO5Wj1aLO3H70rRDbe7n208sPWIg4EcIzMXeKznf/RAu9GyQn+9jExGoeAkbsENVvcGI2kKYp0jh6FTFXe4W/XUNtd+tcDqz95iXPZECu0Rl+qN2G0T7daXYk0ObYiT/vfhtEwmMvztwY6pgGd6ZuOOerB1X2Vr3+BYTrjVPaEJTZprKHH/ZPqTAFhiTY2SGfuQ+pjM0yGsWLEWDtMWrUhVNflYsT0TG17QEYiML5jn6CsdyDH+Rw462dZCUn0HJQCHvwbsM1FEaKv8c5rEGgUZhyjON9qdnazIGuYNZ3KAnfawHF6vtjgWvaSgvLCyTJJtOZ7Bk8p2z29WRj0rDZOYaMHVF1E/Ud4G6pfkE4RLlhH', // Replace with your own secret key
@@ -770,6 +786,9 @@ async function transcribeAudioWithAssemblyAI(audioPath) {
 
     return transcriptionText;
 }
+
+})();
+
 
 // Start the server
 app.listen(port, () => {
