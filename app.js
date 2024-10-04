@@ -18,10 +18,71 @@ const session = require('express-session');
 require('dotenv').config();
 
 
-const port = 3000;
-const GOOGLE_ID = "909473958500-h7qm6q6mpfkldnrb5b27iqdggtm87ek6.apps.googleusercontent.com";
-const Google_secret = "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";
-const Google_callback_url="http://n11849622.cab432.com:3000/auth/google/callback";
+//const port = 3000;
+//const GOOGLE_ID = "909473958500-h7qm6q6mpfkldnrb5b27iqdggtm87ek6.apps.googleusercontent.com";
+//const Google_secret = "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";
+//const Google_callback_url="http://n11849622.cab432.com:3000/auth/google/callback";
+
+// Helper function to get a single parameter value
+async function getParameter(paramName, withDecryption = false) {
+    const params = {
+      Name: paramName,
+      WithDecryption: withDecryption,  // Set to true for `SecureString` parameters
+    };
+    const parameter = await ssm.getParameter(params).promise();
+    return parameter.Parameter.Value;
+  }
+  
+  // Helper function to get multiple parameters at once
+  async function getParameters(parameterNames) {
+    const params = {
+      Names: parameterNames,
+      WithDecryption: true,  // Retrieve `SecureString` parameters decrypted
+    };
+    const response = await ssm.getParameters(params).promise();
+    const paramMap = {};
+    response.Parameters.forEach(param => {
+      paramMap[param.Name] = param.Value;
+    });
+    return paramMap;
+  }
+  
+  // Retrieve parameters in your application
+  (async () => {
+    try {
+      const parameterNames = [
+        '/app/GOOGLE_ID',
+        '/app/Google_secret',
+        '/app/Google_callback_url'
+      ];
+  
+      const secrets = await getParameters(parameterNames);
+  
+      // Assign the values
+      const GOOGLE_ID = secrets['/app/GOOGLE_ID'];
+      const Google_secret = secrets['/app/Google_secret'];
+      const Google_callback_url = secrets['/app/Google_callback_url'];
+  
+      // Use these values in your OAuth configuration or application setup
+      console.log('Google ID:', GOOGLE_ID);
+      console.log('Google Secret:', Google_secret);
+      console.log('Google Callback URL:', Google_callback_url);
+  
+    } catch (err) {
+      console.error('Error fetching parameters:', err);
+    }
+  })();
+
+
+process.env.GOOGLE_ID = secrets['/app/GOOGLE_ID'];
+process.env.Google_secret = secrets['/app/Google_secret'];
+process.env.Google_callback_url = secrets['/app/Google_callback_url'];
+
+
+const GOOGLE_ID = process.env.GOOGLE_ID
+const Google_secret = process.env.Google_secret
+const Google_callback_url = process.env.Google_callback_url
+
 
 // Set up session management
 app.use(session({
