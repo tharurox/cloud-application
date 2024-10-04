@@ -17,9 +17,11 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
 require('dotenv').config();
 
-const secretsManager = new AWS.SecretsManager({ region: 'ap-southeast-2' }); // Replace with your region
+const AWS = require('aws-sdk');
+const secretsManager = new AWS.SecretsManager({ region: 'us-east-1' }); // Replace with your region
 
-// Helper function to get secret value
+let GOOGLE_ID, Google_secret, Google_callback_url, ASSEMBLYAI_API_KEY_val; // Declare globally
+
 async function getSecret(secretName) {
   try {
     const data = await secretsManager.getSecretValue({ SecretId: secretName }).promise();
@@ -33,23 +35,33 @@ async function getSecret(secretName) {
   }
 }
 
-// Use this function to get the values in your application
 (async () => {
   try {
     const secretValues = await getSecret('/n11849622/app');
-    const GOOGLE_ID = secretValues.GOOGLE_ID;
-    const Google_secret = secretValues.Google_secret;
-    const Google_callback_url = secretValues.Google_callback_url;
-    const ASSEMBLYAI_API_KEY_val = secretValues.ASSEMBLYAI_API_KEY
-    // Use these variables in your OAuth configuration
+
+    // Assign values to global variables
+    GOOGLE_ID = secretValues.GOOGLE_ID;
+    Google_secret = secretValues.Google_secret;
+    Google_callback_url = secretValues.Google_callback_url;
+    ASSEMBLYAI_API_KEY_val = secretValues.ASSEMBLYAI_API_KEY;
+
+    // Use these variables here or in other parts of your application
+    console.log('Google ID:', GOOGLE_ID);
+    console.log('Google Secret:', Google_secret);
+    console.log('Google Callback URL:', Google_callback_url);
+    console.log('AssemblyAI API Key:', ASSEMBLYAI_API_KEY_val);
   } catch (err) {
     console.error('Error:', err);
   }
 })();
 
-const GOOGLE_ID = secretValues.GOOGLE_ID;
-const Google_secret = secretValues.Google_secret;
-const Google_callback_url = secretValues.Google_callback_url;
+// Now you can access these variables elsewhere in the code
+setTimeout(() => {
+  console.log('Google ID (global):', GOOGLE_ID);
+}, 1000); // Example of using the global variables after they are set
+
+
+
 
 // Set up session management
 app.use(session({
