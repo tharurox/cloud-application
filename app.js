@@ -37,7 +37,7 @@ async function getSecret(secretName) {
 (async () => {
   try {
     const secretValues = await getSecret('/n11849622/app');
-    const GOOGLE_ID_val = secretValues.GOOGLE_ID;
+    const GOOGLE_ID = secretValues.GOOGLE_ID;
     const Google_secret = secretValues.Google_secret;
     const Google_callback_url = secretValues.Google_callback_url;
     const ASSEMBLYAI_API_KEY_val = secretValues.ASSEMBLYAI_API_KEY
