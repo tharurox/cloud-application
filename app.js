@@ -17,34 +17,29 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
 require('dotenv').config();
 
+
 const secretsManager = new AWS.SecretsManager({ region: 'us-east-1' }); // Replace with your region
 
-let GOOGLE_ID, Google_secret, Google_callback_url, ASSEMBLYAI_API_KEY_val; // Declare globally
-
-async function getSecret(secretName) {
+async function getSecretValues() {
   try {
-    const data = await secretsManager.getSecretValue({ SecretId: secretName }).promise();
-    if ('SecretString' in data) {
-      return JSON.parse(data.SecretString);
-    }
-    throw new Error(`Secret ${secretName} is not in string format`);
+    const secretValues = await secretsManager.getSecretValue({ SecretId: '/n11849622/app' }).promise();
+    return JSON.parse(secretValues.SecretString);
   } catch (err) {
-    console.error(`Error retrieving secret ${secretName}:`, err);
+    console.error('Error fetching secrets:', err);
     throw err;
   }
 }
 
+// Usage Example
 (async () => {
   try {
-    const secretValues = await getSecret('/n11849622/app');
+    const secretValues = await getSecretValues();
+    const GOOGLE_ID = secretValues.GOOGLE_ID;
+    const Google_secret = secretValues.Google_secret;
+    const Google_callback_url = secretValues.Google_callback_url;
+    const ASSEMBLYAI_API_KEY_val = secretValues.ASSEMBLYAI_API_KEY;
 
-    // Assign values to global variables
-    GOOGLE_ID = secretValues.GOOGLE_ID;
-    Google_secret = secretValues.Google_secret;
-    Google_callback_url = secretValues.Google_callback_url;
-    ASSEMBLYAI_API_KEY_val = secretValues.ASSEMBLYAI_API_KEY;
-
-    // Use these variables here or in other parts of your application
+    // Use these values as needed
     console.log('Google ID:', GOOGLE_ID);
     console.log('Google Secret:', Google_secret);
     console.log('Google Callback URL:', Google_callback_url);
