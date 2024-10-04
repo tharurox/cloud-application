@@ -17,10 +17,43 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
 require('dotenv').config();
 
-const port = 3000;
-const GOOGLE_ID = "909473958500-h7qm6q6mpfkldnrb5b27iqdggtm87ek6.apps.googleusercontent.com";
-const Google_secret = "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";
-const Google_callback_url="http://n11849622.cab432.com:3000/auth/google/callback";
+const secretsManager = new AWS.SecretsManager({ region: 'ap-southeast-2' }); // Replace with your region
+
+// Helper function to get secret value
+async function getSecret(secretName) {
+  try {
+    const data = await secretsManager.getSecretValue({ SecretId: secretName }).promise();
+    if ('SecretString' in data) {
+      return JSON.parse(data.SecretString);
+    }
+    throw new Error(`Secret ${secretName} is not in string format`);
+  } catch (err) {
+    console.error(`Error retrieving secret ${secretName}:`, err);
+    throw err;
+  }
+}
+
+// Use this function to get the values in your application
+(async () => {
+  try {
+    const secretValues = await getSecret('/n11849622/app');
+    const GOOGLE_ID = secretValues.GOOGLE_ID;
+    const Google_secret = secretValues.Google_secret;
+    const Google_callback_url = secretValues.Google_callback_url;
+
+    console.log('Google ID:', GOOGLE_ID);
+    console.log('Google Secret:', Google_secret);
+    console.log('Google Callback URL:', Google_callback_url);
+
+    // Use these variables in your OAuth configuration
+  } catch (err) {
+    console.error('Error:', err);
+  }
+})();
+
+const GOOGLE_ID = secretValues.GOOGLE_ID;
+const Google_secret = secretValues.Google_secret;
+const Google_callback_url = secretValues.Google_callback_url;
 
 // Set up session management
 app.use(session({
