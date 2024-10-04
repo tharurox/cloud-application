@@ -19,7 +19,7 @@ RUN mv cloud-application app
 
 WORKDIR /opt/app
 
-RUN npm child_process passport jsonwebtoken install express multer fluent-ffmpeg ejs axios fs form-data aws-sdk
+RUN npm passport jsonwebtoken install express multer fluent-ffmpeg ejs axios fs form-data aws-sdk
 
 EXPOSE 3000
 CMD [ "node", "app.js"]
