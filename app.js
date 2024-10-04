@@ -71,9 +71,6 @@ async function getParameter(paramName, withDecryption = false) {
       console.log('Google Callback URL:', process.env.Google_callback_url);
   
       // Use these environment variables in your application
-      const GOOGLE_ID = process.env.GOOGLE_ID;
-      const Google_secret = process.env.Google_secret;
-      const Google_callback_url = process.env.Google_callback_url;
   
       // Example usage
       console.log('GOOGLE_ID:', GOOGLE_ID);
@@ -84,6 +81,10 @@ async function getParameter(paramName, withDecryption = false) {
       console.error('Error fetching parameters:', err);
     }
   })();
+
+  const GOOGLE_ID = process.env.GOOGLE_ID;
+  const Google_secret = process.env.Google_secret;
+  const Google_callback_url = process.env.Google_callback_url;
 
 
 // Set up session management
