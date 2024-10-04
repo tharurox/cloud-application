@@ -17,7 +17,6 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
 require('dotenv').config();
 
-const AWS = require('aws-sdk');
 const secretsManager = new AWS.SecretsManager({ region: 'us-east-1' }); // Replace with your region
 
 let GOOGLE_ID, Google_secret, Google_callback_url, ASSEMBLYAI_API_KEY_val; // Declare globally
