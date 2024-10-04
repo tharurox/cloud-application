@@ -61,9 +61,9 @@ async function getParameter(paramName, withDecryption = false) {
       const secrets = await getParameters(parameterNames);
   
       // Assign the values to environment variables
-      process.env.GOOGLE_ID = secrets['/n11849622/Google_ID'];
-      process.env.Google_secret = secrets['/n11849622/Google_secret'];
-      process.env.Google_callback_url = secrets['/n11849622/Google_callback_url'];
+      const GOOGLE_ID = secrets['/n11849622/Google_ID'];
+      const Google_secret = secrets['/n11849622/Google_secret'];
+      const Google_callback_url = secrets['/n11849622/Google_callback_url'];
   
       // Log values for confirmation (optional)
       console.log('Google ID:', process.env.GOOGLE_ID);
@@ -81,11 +81,6 @@ async function getParameter(paramName, withDecryption = false) {
       console.error('Error fetching parameters:', err);
     }
   })();
-
-  const GOOGLE_ID = process.env.GOOGLE_ID;
-  const Google_secret = process.env.Google_secret;
-  const Google_callback_url = process.env.Google_callback_url;
-
 
 // Set up session management
 app.use(session({
