@@ -6,7 +6,6 @@ const ffmpeg = require('fluent-ffmpeg');
 const axios = require('axios');
 const { CognitoUserPool, CognitoUserAttribute, CognitoUser, AuthenticationDetails } = require('amazon-cognito-identity-js');
 const AWS = require('aws-sdk');
-const ssm = new AWS.SSM({ region: 'ap-southeast-2' });
 const jwt = require('jsonwebtoken');
 const flash = require('connect-flash');
 const { spawn } = require('child_process');
@@ -19,66 +18,14 @@ const session = require('express-session');
 require('dotenv').config();
 
 
-//const port = 3000;
-//const GOOGLE_ID = "909473958500-h7qm6q6mpfkldnrb5b27iqdggtm87ek6.apps.googleusercontent.com";
-//const Google_secret = "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";
-//const Google_callback_url="http://n11849622.cab432.com:3000/auth/google/callback";
+const port = 3000;
+const GOOGLE_ID = "909473958500-h7qm6q6mpfkldnrb5b27iqdggtm87ek6.apps.googleusercontent.com";
+const Google_secret = "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";
+const Google_callback_url="http://n11849622.cab432.com:3000/auth/google/callback";
 
-async function getParameters(parameterNames) {
-    const params = {
-      Names: parameterNames,
-      WithDecryption: true,  // Retrieve `SecureString` parameters decrypted
-    };
-    const response = await ssm.getParameters(params).promise();
-    const paramMap = {};
-    response.Parameters.forEach(param => {
-      paramMap[param.Name] = param.Value;
-    });
-    return paramMap;
-  }
-  
-  // Function to load secrets into environment variables
-  async function loadSecrets() {
-    try {
-      const parameterNames = [
-        '/app/GOOGLE_ID',
-        '/app/Google_secret',
-        '/app/Google_callback_url'
-      ];
-  
-      const secrets = await getParameters(parameterNames);
-  
-      // Set environment variables
-      process.env.GOOGLE_ID = secrets['/app/GOOGLE_ID'];
-      process.env.Google_secret = secrets['/app/Google_secret'];
-      process.env.Google_callback_url = secrets['/app/Google_callback_url'];
-  
-      console.log('Secrets loaded successfully.');
-    } catch (err) {
-      console.error('Error loading secrets:', err);
-      throw new Error('Failed to load secrets');
-    }
-  }
-  
-  // Ensure secrets are loaded before proceeding with the main application logic
-  (async () => {
-    await loadSecrets();
-  
-    // Now you can access these variables in your application
-    const GOOGLE_ID = process.env.GOOGLE_ID;
-    const Google_secret = process.env.Google_secret;
-    const Google_callback_url = process.env.Google_callback_url;
-  
-    // Example usage
-    console.log('Google ID:', GOOGLE_ID);
-    console.log('Google Secret:', Google_secret);
-    console.log('Google Callback URL:', Google_callback_url);
-  
-    // Your main application code goes here
-  
 // Set up session management
 app.use(session({
-    secret: 'IQoJb3JpZ2luX2VjEIb//////////wEaDmFwLXNvdXRoZWFzdC0yIkcwRQIhAK2HSuGHsoJPkg/Sf98d3mj0xBCUc5+ePpAsrPdxU2MBAiAvZZ48Ks6hWIcXn91RxUrWe/D8dLDR5i754phkkI80PyquAwjP//////////8BEAMaDDkwMTQ0NDI4MDk1MyIMKTAP8E2pw+iAhr3GKoIDAD/Nkxu56nHfH8HgX66LF2on5Pcrly7u6rBRF5UWF3QHn5yMp3ncHMsVaDd7qLDUgfF3raSnAEL5t/ppQZyyuQ5lNVZPO2iIwZt6GJOwhKM7t8w9XbZPj9MxnQKNNjpzXl3pxZG4ngJUpFNLN+FzHgKD6i8IDmUS2pIywFH/BzKhp+5N45BF/kg4YobsLameSq4+3dd/p5vjohNyto+yfg9q7ts5vxbJrdYgIkUprOiFpLv0RMpzT6D63jIIQMstiC6zVKSuNMxtjCmWgX08pR2WbGeHPCi2x/Y0dKU3iSKn6khWAxO5mN+na6YJ343UBELZSgbjA5B3GEmCOGLEFCO+Pa4KZquYmuHh6TmcwT0qrpIdobjn+qiGJbM81B4qSqVMrC0t1ttm+jiYx5Goy4FkMUyHi2ntYgP2vdWKqEjfAPaOrp1pEkzKXJlOt9Z20VQln1ay0RBhrMLKLcARjQnSAu9UDjHmcEf8G4ZNWMkbS5DoXTEkyS8YwbCjuPyGbKAwj4r+twY6pgELjrPYiO4Q6QbjNSOyKacAoJh80HBS+IRGloHx3mWCxmt0u3hlON1R4vn/PI+UakLSCvZmW0SFyEf78QICzYVyGCws+nhbAtcDZJt1wy/Hq15vGtGGV5gwiqpNsI2TlZyGQmwvSRGbpBuO8pR5CctddREewQ7USjQuyI02V6tXUP/jZTD9AtG8EgLEwxtrWvkSDxBSCMfOMCz0EvbpeswtpNDxs/hY', // Replace with your own secret key
+    secret: 'IQoJb3JpZ2luX2VjEFYaDmFwLXNvdXRoZWFzdC0yIkcwRQIgEvuMejNGLNOpuvoCtxwsx8I2y0yDskPm5oUiDWAmnHsCIQCaOL/DDCe/mCeRc9NuNSBlJHoK+f/NIEv5Xmj2ysIpuSquAwif//////////8BEAMaDDkwMTQ0NDI4MDk1MyIMJd0TzO9yPAS+aEHQKoIDYuReFgMTignFK8lOpnLMnwkUjJh7XoEV6CfaduLpm4NNCDil1fz+ezxOqIhw12Djgf6N/Zr0yyys3EGr95t6/FxvRQSZ0caTB9dkexVmvBnK7BXWlYhHyhpXcsY3lTast1J4pALIHaTZGiZeQ+C/pyA3bswbg9mLMaOK6ka0Kl4VMuhjdRQLsGmkG6dtjNW38Jf2x8qF2rWcbiB6Ewk++F3ilI+IKt7JBy296qfvLTpAntbygIb28m7QV9xnOVeN12+NOG4moVg8Td16FVYsablCXKKiu4T/PAPbFRGgCRKSQBqgwjrzxASsOmufn6o0xoN2xN5UuAmNdtvCpDF39hXJ8+Ke9fYX64imxQI7fCQin758hziCJS1CVgnYN9DO5Wj1aLO3H70rRDbe7n208sPWIg4EcIzMXeKznf/RAu9GyQn+9jExGoeAkbsENVvcGI2kKYp0jh6FTFXe4W/XUNtd+tcDqz95iXPZECu0Rl+qN2G0T7daXYk0ObYiT/vfhtEwmMvztwY6pgGd6ZuOOerB1X2Vr3+BYTrjVPaEJTZprKHH/ZPqTAFhiTY2SGfuQ+pjM0yGsWLEWDtMWrUhVNflYsT0TG17QEYiML5jn6CsdyDH+Rw462dZCUn0HJQCHvwbsM1FEaKv8c5rEGgUZhyjON9qdnazIGuYNZ3KAnfawHF6vtjgWvaSgvLCyTJJtOZ7Bk8p2z29WRj0rDZOYaMHVF1E/Ud4G6pfkE4RLlhH', // Replace with your own secret key
     resave: false, // Don't save the session if it's not modified
     saveUninitialized: false, // Don't create session until something is stored
     cookie: { secure: false } // Set secure to true if using HTTPS
@@ -788,12 +735,7 @@ async function transcribeAudioWithAssemblyAI(audioPath) {
     return transcriptionText;
 }
 
-
-
-
 // Start the server
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
 });
-
-})();
