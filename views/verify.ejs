@@ -92,14 +92,6 @@
     <div class="container">
         <h1>Verify Your Account</h1>
 
-        <% if (error_msg) { %>
-            <div class="alert alert-danger"><%= error_msg %></div>
-        <% } %>
-
-        <% if (success_msg) { %>
-            <div class="alert alert-success"><%= success_msg %></div>
-        <% } %>
-
         <p>We have sent a verification code to <strong><%= username %></strong>. Please enter it below to verify your account.</p>
 
         <form action="/verify" method="POST">
