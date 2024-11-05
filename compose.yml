@@ -1,0 +1,14 @@
+version: '1.1'
+
+services:
+  web:
+    image: 901444280953.dkr.ecr.ap-southeast-2.amazonaws.com/11849622:latest
+    container_name: 11849622
+    ports:
+      - "3000:3000"
+    volumes:
+      - /opt/app:/opt/app
+    environment:
+      - WEB_URL=54.153.215.157
+    networks:
+      - my-network

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Transcription</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #f3f4f6, #ffffff);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        form {
+            margin-bottom: 1.5rem;
+        }
+        input[type="file"], input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: block;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .logout-button {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .logout-button:hover {
+            background-color: #d32f2f;
+        }
+        #transcribeOutput {
+            white-space: pre-wrap;
+            border: 1px solid #ddd;
+            padding: 1rem;
+            background-color: #f9f9f9;
+            font-family: monospace;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        #loadingSpinner {
+            display: none;
+            border: 8px solid #f3f3f3; /* Light grey */
+            border-top: 8px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+            margin-top: 1rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload Video for Transcription</h1>
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <input type="file" name="video" accept="video/*" required>
+            <button type="submit">Upload and Transcribe</button>
+        </form>
+
+        <h1>Transcribe from URL</h1>
+        <form id="transcribeForm">
+            <input type="text" id="urlInput" placeholder="Enter URL or text here" required>
+            <button type="button" id="transcribeButton">Transcribe</button>
+        </form>
+
+        <div id="loadingSpinner"></div>
+
+        <div id="transcribeOutput"></div>
+        
+        <form action="/history" method="GET">
+            <button type="submit">History</button>
+        </form>
+
+        <form action="/logout" method="GET">
+            <button type="submit" class="logout-button">Logout</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('transcribeButton').addEventListener('click', async function() {
+            const text = document.getElementById('urlInput').value;
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            loadingSpinner.style.display = 'block'; // Show the loading spinner
+
+            if (text) {
+                const response = await fetch('/transcribe_url', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+
+                if (response.ok) {
+                    const reader = response.body.getReader();
+                    let receivedLength = 0;
+                    const contentLength = +response.headers.get('Content-Length') || 100;
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        receivedLength += value.length;
+
+                        if (receivedLength >= contentLength) {
+                            loadingSpinner.style.display = 'none'; // Hide the loading spinner
+                            const data = await new TextDecoder('utf-8').decode(value);
+                            document.getElementById('transcribeOutput').textContent = data;
+                        }
+                    }
+                } else {
+                    loadingSpinner.style.display = 'none'; // Hide the loading spinner
+                    document.getElementById('transcribeOutput').textContent = 'Transcription failed.';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

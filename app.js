@@ -1,0 +1,890 @@
+const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const ffmpeg = require('fluent-ffmpeg');
+const axios = require('axios');
+const { CognitoUserPool, CognitoUserAttribute, CognitoUser, AuthenticationDetails } = require('amazon-cognito-identity-js');
+const AWS = require('aws-sdk');
+const jwt = require('jsonwebtoken');
+const flash = require('connect-flash');
+const { spawn } = require('child_process');
+const db = require('./config/database'); // Using MySQL from config/database.js
+const dbPromise = require('./config/database'); // Ensure db is returned as a Promise
+const app = express();
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const session = require('express-session');
+const sqs = new AWS.SQS({ apiVersion: '2012-11-05' });
+require('dotenv').config();
+const SQS_QUEUE_URL = "https://sqs.ap-southeast-2.amazonaws.com/901444280953/n11849622-request-queue";
+const port = 4000;
+// Function to get parameter values from AWS Parameter Store
+async function getParameterValue(parameterName) {
+    const command = new GetParameterCommand({
+      Name: parameterName,
+      WithDecryption: true, // Set to true for sensitive parameters like secrets
+    });
+    try {
+      const response = await ssmClient.send(command);
+      return response.Parameter.Value;
+    } catch (err) {
+      console.error(`Failed to fetch parameter ${parameterName}:`, err);
+      throw err;
+    }
+  }
+  
+  (async () => {
+    try {
+      // Retrieve parameters from Parameter Store
+      const GOOGLE_ID = await getParameterValue("GOOGLE_ID");
+      const Google_secret = await getParameterValue("Google_secret");
+      const Google_callback_url = await getParameterValue("Google_callback_url");
+  
+      console.log("GOOGLE_ID:", GOOGLE_ID);
+      console.log("Google_secret:", Google_secret);
+      console.log("Google_callback_url:", Google_callback_url);
+  
+      // Use the retrieved values as needed
+      // Example: Initializing the Google OAuth strategy
+      const passport = require("passport");
+      const GoogleStrategy = require("passport-google-oauth20").Strategy;
+  
+      passport.use(
+        new GoogleStrategy(
+          {
+            clientID: GOOGLE_ID,
+            clientSecret: Google_secret,
+            callbackURL: Google_callback_url,
+          },
+          (accessToken, refreshToken, profile, done) => {
+            // Handle the Google profile here
+            return done(null, profile);
+          }
+        )
+      );
+    } catch (err) {
+      console.error("Error initializing application:", err);
+    }
+  })();
+
+  // Function to send a message to the SQS queue
+async function sendMessageToSQS(task) {
+    const params = {
+      QueueUrl: SQS_QUEUE_URL,
+      MessageBody: JSON.stringify(task), // Task details as a JSON string
+    };
+  
+    try {
+      const result = await sqs.sendMessage(params).promise();
+      console.log('Message sent to SQS:', result.MessageId);
+    } catch (error) {
+      console.error('Error sending message to SQS:', error);
+    }
+  }
+
+// Set up session management
+app.use(session({
+    secret: 'IQoJb3JpZ2luX2VjEFYaDmFwLXNvdXRoZWFzdC0yIkcwRQIgEvuMejNGLNOpuvoCtxwsx8I2y0yDskPm5oUiDWAmnHsCIQCaOL/DDCe/mCeRc9NuNSBlJHoK+f/NIEv5Xmj2ysIpuSquAwif//////////8BEAMaDDkwMTQ0NDI4MDk1MyIMJd0TzO9yPAS+aEHQKoIDYuReFgMTignFK8lOpnLMnwkUjJh7XoEV6CfaduLpm4NNCDil1fz+ezxOqIhw12Djgf6N/Zr0yyys3EGr95t6/FxvRQSZ0caTB9dkexVmvBnK7BXWlYhHyhpXcsY3lTast1J4pALIHaTZGiZeQ+C/pyA3bswbg9mLMaOK6ka0Kl4VMuhjdRQLsGmkG6dtjNW38Jf2x8qF2rWcbiB6Ewk++F3ilI+IKt7JBy296qfvLTpAntbygIb28m7QV9xnOVeN12+NOG4moVg8Td16FVYsablCXKKiu4T/PAPbFRGgCRKSQBqgwjrzxASsOmufn6o0xoN2xN5UuAmNdtvCpDF39hXJ8+Ke9fYX64imxQI7fCQin758hziCJS1CVgnYN9DO5Wj1aLO3H70rRDbe7n208sPWIg4EcIzMXeKznf/RAu9GyQn+9jExGoeAkbsENVvcGI2kKYp0jh6FTFXe4W/XUNtd+tcDqz95iXPZECu0Rl+qN2G0T7daXYk0ObYiT/vfhtEwmMvztwY6pgGd6ZuOOerB1X2Vr3+BYTrjVPaEJTZprKHH/ZPqTAFhiTY2SGfuQ+pjM0yGsWLEWDtMWrUhVNflYsT0TG17QEYiML5jn6CsdyDH+Rw462dZCUn0HJQCHvwbsM1FEaKv8c5rEGgUZhyjON9qdnazIGuYNZ3KAnfawHF6vtjgWvaSgvLCyTJJtOZ7Bk8p2z29WRj0rDZOYaMHVF1E/Ud4G6pfkE4RLlhH', // Replace with your own secret key
+    resave: false, // Don't save the session if it's not modified
+    saveUninitialized: false, // Don't create session until something is stored
+    cookie: { secure: false } // Set secure to true if using HTTPS
+}));
+
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(GOOGLE_ID);
+
+// Function to verify Google ID token
+async function verifyGoogleToken(token) {
+    // Verify ID token and return the payload
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: GOOGLE_ID, // Specify the CLIENT_ID of the app that accesses the backend
+    });
+    return ticket.getPayload(); // Return the payload (user info)
+  }
+
+// Set up flash middleware for flash messages
+app.use(flash());
+
+// Middleware to set flash messages as locals for access in templates
+app.use((req, res, next) => {
+    res.locals.success_msg = req.flash('success_msg');
+    res.locals.error_msg = req.flash('error_msg');
+    res.locals.error = req.flash('error');
+    next();
+});
+
+passport.use(new GoogleStrategy({
+    clientID: GOOGLE_ID,
+    clientSecret: Google_secret,
+    callbackURL: Google_callback_url,
+    scope: ['openid', 'profile', 'email'],
+  }, (accessToken, refreshToken, profile, done) => {
+    // Pass the accessToken to the user object
+    profile.accessToken = accessToken;
+    done(null, profile);
+  }));
+
+passport.serializeUser((user, done) => {
+    done(null, user);
+});
+
+passport.deserializeUser((obj, done) => {
+    done(null, obj);
+});
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+
+passport.use(new GoogleStrategy({
+    clientID: GOOGLE_ID,
+    clientSecret: Google_secret,
+    callbackURL: Google_callback_url
+}, (token, tokenSecret, profile, done) => {
+    // Here you can link the Google profile to a user in your database
+    done(null, profile);
+}));
+
+passport.serializeUser((user, done) => {
+    done(null, user);
+});
+
+passport.deserializeUser((obj, done) => {
+    done(null, obj);
+});
+
+function isLoggedIn(req, res, next) {
+    if (req.isAuthenticated()) {
+        return next();
+    }
+    res.redirect('/login');
+}
+
+app.get('/', isLoggedIn, (req, res) => {
+    res.render('index', { user: req.user });
+});
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+// AWS Cognito Pool Info
+const poolData = {
+    UserPoolId: 'ap-southeast-2_Up85TT9kx',
+    ClientId: '3jlv0og5l1mkjnq1tdb7bg3ini'
+};
+const userPool = new CognitoUserPool(poolData);
+
+AWS.config.update({
+    region: 'ap-southeast-2'
+});
+
+
+passport.use(new GoogleStrategy({
+    clientID: GOOGLE_ID,
+    clientSecret: Google_secret,
+    callbackURL: Google_callback_url
+}, (token, tokenSecret, profile, done) => {
+    // Here you can link the Google profile to a user in your database
+    done(null, profile);
+}));
+
+passport.serializeUser((user, done) => {
+    done(null, user);
+});
+
+passport.deserializeUser((obj, done) => {
+    done(null, obj);
+});
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+
+const { v4: uuidv4 } = require('uuid'); // For unique file names
+
+// Set up S3 with your credentials and region
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
+  sessionToken: process.env.AWS_SESSION_TOKEN
+});
+
+const ASSEMBLYAI_API_KEY = 'f6ac0ab5e04141dca16baf2571bc8c5a'; // Replace with your AssemblyAI API key
+
+// Set EJS as the template engine
+app.set('view engine', 'ejs');
+app.use(express.static('public'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Set up session management
+app.use(session({
+    secret: 'your-secret-key',
+    resave: false,
+    saveUninitialized: false,
+}));
+
+// Use flash middleware
+app.use(flash());
+
+app.use((req, res, next) => {
+    res.locals.success_msg = req.flash('success_msg');
+    res.locals.error_msg = req.flash('error_msg');
+    res.locals.error = req.flash('error');
+    next();
+});
+
+// Middleware to check if user is authenticated
+function isAuthenticated(req, res, next) {
+    if (req.session && req.session.user) {
+        return next();
+    }
+    res.redirect('/login');
+}
+
+function cognitoLogin(username, password, req, res) {
+    const authDetails = new AuthenticationDetails({
+        Username: username,
+        Password: password
+    });
+
+    const cognitoUser = new CognitoUser({
+        Username: username,
+        Pool: userPool
+    });
+
+    cognitoUser.authenticateUser(authDetails, {
+        onSuccess: (result) => {
+            const idToken = result.getIdToken().getJwtToken();
+            const accessToken = result.getAccessToken().getJwtToken();
+            const refreshToken = result.getRefreshToken().getToken();
+
+            // Decode the ID Token to get user info
+            const decodedToken = jwt.decode(idToken);
+
+            console.log('Successfully authenticated with Cognito.');
+            console.log('User Info:', decodedToken);
+
+            // Store tokens and user details in session
+            req.session.user = decodedToken;
+            req.session.tokens = {
+                idToken,
+                accessToken,
+                refreshToken
+            };
+
+            req.flash('success_msg', 'You are now logged in.');
+            res.render('index');
+        },
+        onFailure: (err) => {
+            console.error('Authentication failed:', err.message);
+            req.flash('error_msg', `Authentication failed: ${err.message}`);
+            res.redirect('/login');
+        },
+        newPasswordRequired: (userAttributes, requiredAttributes) => {
+            req.session.userAttributes = userAttributes;
+            req.session.requiredAttributes = requiredAttributes;
+            req.session.username = username;
+            req.session.password = password;
+
+            req.flash('success_msg', 'You need to change your password.');
+            res.redirect('/change-password');
+        }
+    });
+}
+
+
+app.get('/change-password', (req, res) => {
+    if (!req.session.username || !req.session.cognitoSession) {
+        req.flash('error_msg', 'Invalid session. Please log in again.');
+        return res.redirect('/login');
+    }
+    res.render('change-password', { username: req.session.username });
+});
+
+app.post('/change-password', (req, res) => {
+    const { newPassword } = req.body;
+
+    if (!newPassword) {
+        req.flash('error_msg', 'New password is required.');
+        return res.redirect('/change-password');
+    }
+
+    const cognitoUser = new CognitoUser({
+        Username: req.session.username,
+        Pool: userPool
+    });
+
+    cognitoUser.completeNewPasswordChallenge(newPassword, req.session.userAttributes, {
+        onSuccess: (result) => {
+            const idToken = result.getIdToken().getJwtToken();
+            req.session.user = jwt.decode(idToken);
+            req.flash('success_msg', 'Password changed successfully! You are now logged in.');
+            res.redirect('/');
+        },
+        onFailure: (err) => {
+            req.flash('error_msg', `Password change failed: ${err.message}`);
+            res.redirect('/change-password');
+        }
+    });
+});
+
+// Multer for file uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/');
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
+
+// Home page
+app.get('/', isAuthenticated, (req, res) => {
+    res.render('index');
+});
+
+// Register page
+app.get('/register', (req, res) => {
+    res.render('register');
+});
+// Inside your route where `db.query` is used:
+app.post('/register', async (req, res) => {
+    const { username, password } = req.body;
+
+    console.log('Received registration request:', req.body);
+
+    if (!username || !password) {
+        console.log('Missing username or password');
+        req.flash('error_msg', 'Username and password are required.');
+        return res.redirect('/register');
+    }
+
+    const attributeList = [];
+    const emailAttribute = new CognitoUserAttribute({
+        Name: 'email',
+        Value: username,
+    });
+    attributeList.push(emailAttribute);
+
+    console.log('Attempting to register user with Cognito:', username);
+
+    userPool.signUp(username, password, attributeList, null, async (err, data) => {
+        if (err) {
+            console.error('Error registering user in Cognito:', err.message);
+            req.flash('error_msg', `Error registering user: ${err.message}`);
+            return res.redirect('/register');
+        }
+
+        console.log('Successfully registered user in Cognito:', data);
+
+        const userId = data.userSub; // This is the Cognito User Sub (UUID)
+        console.log('User ID from Cognito:', userId);
+
+        try {
+            console.log('Waiting for DB connection...');
+            const db = await dbPromise;
+            console.log('DB connection established.');
+
+            const query = `INSERT INTO users (id, username, password) VALUES (?, ?, ?)`;
+            db.query(query, [userId, username, password], (dbErr) => {
+                if (dbErr) {
+                    console.error('Error inserting user into MySQL:', dbErr);
+                    req.flash('error_msg', 'Error registering user in database.');
+                    return res.redirect('/register');
+                }
+
+                console.log('User successfully inserted into MySQL database.');
+                req.session.username = username;
+                req.session.userId = userId; // Save the Cognito user ID in the session
+                console.log('Session set for user:', username);
+                res.redirect('/verify');
+            });
+        } catch (error) {
+            console.error('Error handling db connection:', error);
+            req.flash('error_msg', 'Database connection error.');
+            res.redirect('/register');
+        }
+    });
+});
+
+
+// Verification page
+app.get('/verify', (req, res) => {
+    const username = req.session.username;
+
+    if (!username) {
+        req.flash('error_msg', 'Username not found. Please register again.');
+        return res.redirect('/register');
+    }
+
+    res.render('verify', { username });
+});
+
+// Handle user verification
+app.post('/verify', (req, res) => {
+    const { code } = req.body;
+    const username = req.session.username;
+
+    if (!username || !code) {
+        req.flash('error_msg', 'Invalid verification details.');
+        return res.redirect('/verify');
+    }
+
+    const cognitoUser = new CognitoUser({
+        Username: username,
+        Pool: userPool
+    });
+
+    cognitoUser.confirmRegistration(code, true, (err, result) => {
+        if (err) {
+            req.flash('error_msg', `Verification failed: ${err.message}`);
+            return res.redirect('/verify');
+        }
+        req.flash('success_msg', 'Account verified successfully! Please log in.');
+        res.redirect('/login');
+    });
+});
+
+// Login page
+app.get('/login', (req, res) => {
+    res.render('login');
+});
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+
+    // Temporary hard-coded admin login
+    if (username === 'admin' && password === 'admin') {
+        req.session.user = { username: 'admin', role: 'admin' }; // You can store other info if needed
+        return res.redirect('/');
+    }
+
+    // If not hardcoded admin login, continue with Cognito login
+    if (!username || !password) {
+        req.flash('error_msg', 'Username and password are required.');
+        return res.redirect('/login');
+    }
+
+    cognitoLogin(username, password, req, res);
+});
+
+const cognitoIdentity = new AWS.CognitoIdentity();
+// Google authentication route with required scope
+app.get('/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+
+);
+app.get('/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/login' }),
+    async (req, res) => {
+      // Extract ID token from the Google profile or accessToken
+      const googleIdToken = req.user?.idToken || req.authInfo?.id_token || req.user?.accessToken;
+  
+      // Check if the token is a valid JWT before proceeding
+      if (!googleIdToken || googleIdToken.split('.').length !== 3) {
+        console.error('Missing or invalid Google idToken');
+        return res.redirect('/login');
+      }
+  
+      try {
+        // Log the Google user profile to confirm the data received
+        console.log('Google Profile:', req.user);
+  
+        // Verify the Google ID token to ensure it's valid
+        const payload = await verifyGoogleToken(googleIdToken);
+        console.log('Verified Google Token Payload:', payload);
+  
+        // If verification is successful, proceed with Cognito integration
+        const params = {
+          IdentityPoolId: 'ap-southeast-2:04b1c923-0159-4f10-a4ed-1b5a9fa53904',
+          Logins: {
+            'accounts.google.com': googleIdToken,
+          },
+        };
+  
+        cognitoIdentity.getId(params, (err, data) => {
+          if (err) {
+            console.error('Error fetching Cognito ID:', err);
+            return res.redirect('/login');
+          }
+  
+          console.log('Cognito Identity ID:', data.IdentityId);
+  
+          // Once identityId is obtained, fetch credentials
+          cognitoIdentity.getCredentialsForIdentity(
+            {
+              IdentityId: data.IdentityId,
+              Logins: params.Logins,
+            },
+            (err, credentials) => {
+              if (err) {
+                console.error('Error fetching Cognito credentials:', err);
+                return res.redirect('/login');
+              }
+  
+              // Store credentials in session and redirect to the home page
+              console.log('Cognito Credentials:', credentials);
+              req.session.credentials = credentials;
+              res.render('index'); // Redirect to the home page or desired route after login
+            }
+          );
+        });
+      } catch (error) {
+        console.error('Invalid Google ID token:', error);
+        return res.redirect('/login');
+      }
+    }
+  );
+  
+// Logout route
+app.get('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.error('Error during logout:', err);
+            return res.status(500).send('Error during logout');
+        }
+        res.redirect('/login');
+    });
+});
+
+// Function to send a message to SQS
+async function sendMessageToSQS(task) {
+    const params = {
+      QueueUrl: SQS_QUEUE_URL,
+      MessageBody: JSON.stringify(task), // Task details as a JSON string
+    };
+  
+    try {
+      const result = await sqs.sendMessage(params).promise();
+      console.log('Message sent to SQS:', result.MessageId);
+    } catch (error) {
+      console.error('Error sending message to SQS:', error);
+    }
+  }
+
+
+
+app.post('/upload', upload.single('video'), async (req, res) => {
+    console.log('File upload details:', req.file);
+  
+    if (!req.file) {
+      return res.status(400).send('No file uploaded');
+    }
+  
+    // Prepare task data for SQS
+    const videoPath = req.file.path;
+    const bucketName = 'n11849622-assignment-2';
+    const videoFileName = path.basename(videoPath);
+    const s3VideoKey = `videos/${uuidv4()}-${videoFileName}`;
+    const userId = req.session.user ? req.session.user.sub : null;
+  
+    const task = {
+      type: 'videoUpload',
+      videoPath: videoPath,
+      bucketName: bucketName,
+      s3VideoKey: s3VideoKey,
+      mimeType: req.file.mimetype,
+      userId: userId,
+    };
+  
+    try {
+      // Send task to SQS for background processing
+      await sendMessageToSQS(task);
+  
+      // Respond immediately to the client
+      res.status(202).json({
+        message: 'File uploaded successfully. Processing will begin shortly.',
+        videoFileName: videoFileName,
+        s3VideoKey: s3VideoKey,
+      });
+    } catch (error) {
+      console.error('Error queuing the upload task:', error);
+      res.status(500).send('Error processing upload');
+    }
+  });
+
+
+  // Function to process video upload tasks
+async function processVideoUpload(task) {
+    const { videoPath, bucketName, s3VideoKey, mimeType, userId } = task;
+  
+    // Read the video file and upload to S3
+    const fileData = fs.readFileSync(videoPath);
+  
+    const uploadParams = {
+      Bucket: bucketName,
+      Key: s3VideoKey,
+      Body: fileData,
+      ContentType: mimeType,
+    };
+  
+    await s3.upload(uploadParams).promise();
+    console.log(`Video file uploaded to S3: ${s3VideoKey}`);
+  
+    // Process video with ffmpeg and transcribe
+    const audioPath = `uploads/${Date.now()}.mp3`;
+    await new Promise((resolve, reject) => {
+      ffmpeg(videoPath)
+        .output(audioPath)
+        .on('end', async () => {
+          try {
+            const transcriptionText = await transcribeAudioWithAssemblyAI(audioPath);
+            const transcriptionKey = `transcriptions/${uuidv4()}.txt`;
+  
+            // Upload transcription to S3
+            const transcriptionUploadParams = {
+              Bucket: bucketName,
+              Key: transcriptionKey,
+              Body: transcriptionText,
+              ContentType: 'text/plain',
+            };
+  
+            await s3.upload(transcriptionUploadParams).promise();
+            console.log(`Transcription file uploaded to S3: ${transcriptionKey}`);
+  
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        })
+        .run();
+    });
+  
+    console.log('Processing and transcription completed');
+  }
+  
+  // Transcribe audio using AssemblyAI
+  async function transcribeAudioWithAssemblyAI(audioPath) {
+    const uploadResponse = await axios({
+      method: 'post',
+      url: 'https://api.assemblyai.com/v2/upload',
+      headers: {
+        authorization: ASSEMBLYAI_API_KEY,
+        'content-type': 'application/json',
+      },
+      data: fs.createReadStream(audioPath),
+    });
+  
+    const audioUrl = uploadResponse.data.upload_url;
+  
+    const transcriptResponse = await axios({
+      method: 'post',
+      url: 'https://api.assemblyai.com/v2/transcript',
+      headers: {
+        authorization: ASSEMBLYAI_API_KEY,
+        'content-type': 'application/json',
+      },
+      data: {
+        audio_url: audioUrl,
+      },
+    });
+  
+    const transcriptId = transcriptResponse.data.id;
+  
+    let transcriptionText = '';
+    while (true) {
+      const transcriptStatusResponse = await axios({
+        method: 'get',
+        url: `https://api.assemblyai.com/v2/transcript/${transcriptId}`,
+        headers: {
+          authorization: ASSEMBLYAI_API_KEY,
+        },
+      });
+  
+      if (transcriptStatusResponse.data.status === 'completed') {
+        transcriptionText = transcriptStatusResponse.data.text;
+        break;
+      } else if (transcriptStatusResponse.data.status === 'failed') {
+        throw new Error('Transcription failed');
+      }
+  
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait before retrying
+    }
+  
+    return transcriptionText;
+  }
+  
+  // Poll SQS and process messages
+  async function pollSQS() {
+    const params = {
+      QueueUrl: SQS_QUEUE_URL,
+      MaxNumberOfMessages: 5,
+      WaitTimeSeconds: 20,
+    };
+  
+    try {
+      const data = await sqs.receiveMessage(params).promise();
+      if (data.Messages) {
+        for (const message of data.Messages) {
+          const task = JSON.parse(message.Body);
+  
+          if (task.type === 'videoUpload') {
+            await processVideoUpload(task);
+          }
+  
+          // Delete the message after processing
+          await sqs.deleteMessage({
+            QueueUrl: SQS_QUEUE_URL,
+            ReceiptHandle: message.ReceiptHandle,
+          }).promise();
+        }
+      }
+    } catch (error) {
+      console.error('Error processing messages from SQS:', error);
+    }
+  }
+  
+  // Poll the queue continuously
+  setInterval(pollSQS, 5000);
+
+// Handle transcription from URL
+app.post('/transcribe_url', isAuthenticated, async (req, res) => {
+    const text = req.body.text;
+
+    if (text) {
+        const command = 'transcribe-anything';
+        const args = [text];
+        const childProcess = spawn(command, args);
+
+        let output = '';
+
+        childProcess.stdout.on('data', (data) => {
+            output += data.toString();
+        });
+
+        childProcess.stderr.on('data', (data) => {
+            output += `stderr: ${data.toString()}`;
+        });
+
+        childProcess.on('close', (code) => {
+            if (code === 0) {
+                const timestamp = Date.now();
+                const filename = `transcription_${timestamp}.txt`;
+                const filePath = path.join(__dirname, 'transcriptions', filename);
+
+                fs.writeFileSync(filePath, output);
+
+                const userId = req.session.user.sub;
+                db.query(`INSERT INTO downloads (user_id, file_name, file_path, source_url) VALUES (?, ?, ?, ?)`,
+                    [userId, filename, filePath, text],
+                    (err) => {
+                        if (err) {
+                            console.error('Error saving file info to database:', err);
+                        }
+                    });
+
+                res.download(filePath);
+            } else {
+                res.status(500).json({ output: `Process exited with code ${code}` });
+            }
+        });
+
+        childProcess.on('error', (error) => {
+            res.status(500).json({ output: `Error processing the transcription: ${error.message}` });
+        });
+    } else {
+        res.status(400).json({ output: 'No text provided.' });
+    }
+});
+
+// Download transcription
+app.get('/download/:filename', async (req, res) => {
+    const fileName = req.params.filename; // File name passed in the URL
+    const bucketName = 'n11849622-assignment-2'; // Your S3 bucket name
+    const s3FileKey = `transcriptions/${fileName}`; // The file path in S3
+
+    try {
+        // Get the file from S3
+        const s3Params = {
+            Bucket: bucketName,
+            Key: s3FileKey, // The path to the file in the S3 bucket
+        };
+
+        // Fetch the file from S3 using getObject
+        const s3Response = await s3.getObject(s3Params).promise();
+
+        // Set the correct headers for downloading the file
+        res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+        res.setHeader('Content-Type', 'text/plain');
+
+        // Send the file data to the response
+        res.send(s3Response.Body);
+    } catch (error) {
+        console.error('Error downloading file from S3:', error);
+        res.status(500).send('Error downloading the file');
+    }
+});
+
+// Display download history
+app.get('/history', isAuthenticated, (req, res) => {
+    //const userId = req.session.user.sub;
+    const userId = '1';
+
+    db.query(`SELECT * FROM downloads WHERE user_id = ? ORDER BY created_at DESC`, [userId], (err, rows) => {
+        if (err) {
+            return res.status(500).send('Error fetching download history');
+        }
+        res.render('history', { files: rows });
+    });
+});
+
+// Transcribe audio using AssemblyAI
+async function transcribeAudioWithAssemblyAI(audioPath) {
+    const uploadResponse = await axios({
+        method: 'post',
+        url: 'https://api.assemblyai.com/v2/upload',
+        headers: {
+            authorization: ASSEMBLYAI_API_KEY,
+            'content-type': 'application/json',
+        },
+        data: fs.createReadStream(audioPath),
+    });
+
+    const audioUrl = uploadResponse.data.upload_url;
+
+    const transcriptResponse = await axios({
+        method: 'post',
+        url: 'https://api.assemblyai.com/v2/transcript',
+        headers: {
+            authorization: ASSEMBLYAI_API_KEY,
+            'content-type': 'application/json',
+        },
+        data: {
+            audio_url: audioUrl,
+        },
+    });
+
+    const transcriptId = transcriptResponse.data.id;
+
+    let transcriptionCompleted = false;
+    let transcriptionText = '';
+    while (!transcriptionCompleted) {
+        const transcriptStatusResponse = await axios({
+            method: 'get',
+            url: `https://api.assemblyai.com/v2/transcript/${transcriptId}`,
+            headers: {
+                authorization: ASSEMBLYAI_API_KEY,
+            },
+        });
+
+        if (transcriptStatusResponse.data.status === 'completed') {
+            transcriptionText = transcriptStatusResponse.data.text;
+            transcriptionCompleted = true;
+        } else if (transcriptStatusResponse.data.status === 'failed') {
+            throw new Error('Transcription failed');
+        } else {
+            await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+    }
+
+    return transcriptionText;
+}
+
+// Start the server
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+});

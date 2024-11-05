@@ -1,0 +1,36 @@
+[facebook] Extracting URL: https://www.facebook.com/timbeanlandbeantalking/videos/2740297112765301
+[facebook] 2740297112765301: Downloading webpage
+[info] 2740297112765301: Downloading 1 format(s): sd
+[download] Destination: out.mp4
+[download]   0.1% of    1.40MiB at  Unknown B/s ETA Unknown[download]   0.2% of    1.40MiB at  Unknown B/s ETA 00:00  [download]   0.5% of    1.40MiB at    4.61MiB/s ETA 00:00[download]   1.0% of    1.40MiB at    7.47MiB/s ETA 00:00[download]   2.2% of    1.40MiB at   11.61MiB/s ETA 00:00[download]   4.4% of    1.40MiB at   15.63MiB/s ETA 00:00[download]   8.9% of    1.40MiB at   20.35MiB/s ETA 00:00[download]  17.8% of    1.40MiB at   28.82MiB/s ETA 00:00[download]  35.6% of    1.40MiB at   45.89MiB/s ETA 00:00[download]  71.3% of    1.40MiB at   98.30KiB/s ETA 00:04[download]  89.2% of    1.40MiB at   73.91KiB/s ETA 00:02[download]  98.1% of    1.40MiB at   67.81KiB/s ETA 00:00[download] 100.0% of    1.40MiB at   63.79KiB/s ETA 00:00[download] 100% of    1.40MiB in 00:00:22 at 63.75KiB/s  
+stderr: Downloading complete.
+stderr: Running:
+  whisper "/tmp/tmpdf8oum09.wav" --device cpu --model small --output_dir "/tmp/tmp_lxe0ena" --task transcribe
+stderr: /usr/local/lib/python3.9/site-packages/whisper/transcribe.py:78: UserWarning: FP16 is not supported on CPU; using FP32 instead
+  warnings.warn("FP16 is not supported on CPU; using FP32 instead")
+stderr: /usr/local/lib/python3.9/site-packages/transformers/tokenization_utils_base.py:1601: FutureWarning: `clean_up_tokenization_spaces` was not set. It will be set to `True` by default. This behavior will be depracted in transformers v4.45, and will be then set to `False` by default. For more details check this issue: https://github.com/huggingface/transformers/issues/31884
+  warnings.warn(
+Detecting language using up to the first 30 seconds. Use `--language` to specify the language
+Detected language: English
+[00:00.000 --> 00:04.800]  this phrase in my first book, every big opportunity starts with a little conversation. And there's
+[00:04.800 --> 00:11.280]  quite a lot going on in there. What you get, and which I so wish so many other people would get,
+[00:12.000 --> 00:16.640]  is that the networking event is the start of the conversation. So many people trying to get the
+[00:16.640 --> 00:22.080]  beginning and the end of the conversation all into a two hour networking event. I need to meet
+[00:22.080 --> 00:25.760]  this guy, I need to tell him all about my business, I need to work out whether he wants to work with
+[00:25.760 --> 00:32.560]  me. Just chill, just find out about the other people. Really importantly, when you come away
+[00:32.560 --> 00:39.840]  from networking events with a load of business cards, this is why I've got the camera focused here
+[00:39.840 --> 00:45.200]  and not down there. Come away from events with a load of business cards. That's when the real
+[00:45.200 --> 00:50.640]  networking happens. You connect with people, find out about them at the event, just chat to them.
+[00:50.640 --> 00:56.240]  It's after the event that you can put in the actual working really connecting with people.
+Unknown args: []
+Running transcribe_audio on https://www.facebook.com/timbeanlandbeantalking/videos/2740297112765301
+making dir text_Big Opportunities Small Conversations
+Using temporary directory /tmp/tmptofbhl0n
+Running:
+  yt-dlp --no-check-certificate https://www.facebook.com/timbeanlandbeantalking/videos/2740297112765301 -o "out.%(ext)s"
+Downloaded file:  /tmp/tmptofbhl0n/out.mp4
+Running:
+  ffmpeg -y -i "/tmp/tmptofbhl0n/out.mp4" -filter:a speechnorm=e=12.5:r=0.00001:l=1 -acodec pcm_s16le -ar 44100 -ac 1 "/tmp/tmpqor9112e.wav"
+WARNING: NOT using GPU acceleration, using 10x slower CPU instead.
+Using device cpu
+Running whisper on /tmp/tmpdf8oum09.wav (will install models on first run)

@@ -1,0 +1,214 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Launch an EC2 instance, mount an EFS volume, and deploy two ECS Fargate services.
+
+Parameters:
+  LaunchTemplateId:
+    Type: String
+    Default: lt-028e3170490de39c7
+    Description: The ID of the launch template to use for creating the EC2 instance.
+
+Resources:
+  
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable NFS access to the EFS file system
+      VpcId: vpc-007bab53289655834
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: EC2SecurityGroup
+
+  EFSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for EFS Mount Target
+      VpcId: vpc-007bab53289655834
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: sg-078997505ad1c6bbc
+      Tags:
+        - Key: Name
+          Value: EFSSecurityGroup
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplateId
+        Version: '$Latest'
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
+      Tags:
+        - Key: Name
+          Value: EC2InstanceFromLaunchTemplate
+
+  EFSFileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      FileSystemTags:
+        - Key: Name
+          Value: MyEFS
+
+  MountTarget:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SubnetId: subnet-0026e52a1cdb7b226
+      SecurityGroups:
+        - sg-078997505ad1c6bbc
+
+  MountEFSScript:
+    Type: AWS::EC2::Instance
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: lt-028e3170490de39c7
+        Version: '$Latest'
+      SecurityGroupIds:
+        - sg-0a229f92b415680dd
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum install -y amazon-efs-utils
+          mkdir /mnt/efs
+          mount -t efs fs-0d35fb5de71e4ff67:/ /mnt/efs
+
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: n11849622-prac
+
+  ECSServiceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for ECS Fargate Services
+      VpcId: vpc-007bab53289655834
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3002
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: ECSServiceSecurityGroup
+
+  BackendTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: backend-task
+      Cpu: '256'
+      Memory: '512'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: backend-container
+          Image: 901444280953.dkr.ecr.ap-southeast-2.amazonaws.com/11849622:backend
+          PortMappings:
+            - ContainerPort: 3002
+              Protocol: tcp
+          Essential: true
+
+  FrontendTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: frontend-task
+      Cpu: '256'
+      Memory: '512'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: frontend-container
+          Image: 901444280953.dkr.ecr.ap-southeast-2.amazonaws.com/11849622:frntend
+          PortMappings:
+            - ContainerPort: 3000
+              Protocol: tcp
+          Essential: true
+
+  BackendService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref ECSCluster
+      ServiceName: backend-service-01
+      TaskDefinition: !Ref BackendTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - !Ref ECSServiceSecurityGroup
+          Subnets:
+            - subnet-0026e52a1cdb7b226 # Replace with your subnets
+            - subnet-0a123b4c567def890
+      LoadBalancers:
+        - ContainerName: backend-container
+          ContainerPort: 3002
+          TargetGroupArn: !Ref BackendTargetGroup
+
+  FrontendService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref ECSCluster
+      ServiceName: frontend-service
+      TaskDefinition: !Ref FrontendTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - !Ref ECSServiceSecurityGroup
+          Subnets:
+            - subnet-0026e52a1cdb7b226 # Replace with your subnets
+            - subnet-0a123b4c567def890
+      LoadBalancers:
+        - ContainerName: frontend-container
+          ContainerPort: 3000
+          TargetGroupArn: !Ref FrontendTargetGroup
+
+  ECSExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ECSExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:GetAuthorizationToken
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+
+Outputs:
+  ClusterName:
+    Description: The ECS Cluster name
+    Value: !Ref ECSCluster
+
+  BackendServiceArn:
+    Description: ARN of the backend ECS service
+    Value: !Ref BackendService
+
+  FrontendServiceArn:
+    Description: ARN of the frontend ECS service
+    Value: !Ref FrontendService
